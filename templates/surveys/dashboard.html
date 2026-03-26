@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-graph-up"></i> Dashboard</h2>
+        <h5 class="text-muted">{{ client.name }}</h5>
+    </div>
+    <div>
+        {% if user.is_researcher or user.is_director %}
+        <a href="{% url 'surveys:create' %}?client={{ client.pk }}" class="btn btn-success">
+            <i class="bi bi-clipboard-plus"></i> Nova Pesquisa
+        </a>
+        {% endif %}
+        <a href="{% url 'clients:detail' client.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+{% if surveys %}
+<div class="row mb-4">
+    <!-- NPS ao longo do tempo -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>Evolução NPS Geral</strong></div>
+            <div class="card-body">
+                <canvas id="npsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notas por serviço -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>Notas por Serviço</strong></div>
+            <div class="card-body">
+                <canvas id="servicesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de pesquisas -->
+<div class="card">
+    <div class="card-header"><strong>Histórico de Pesquisas</strong></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Respondente</th>
+                        <th>Cargo</th>
+                        <th>NPS</th>
+                        {% for service in client.services.all %}
+                        <th>{{ service.name }}</th>
+                        {% endfor %}
+                        <th>Comentários</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for survey in surveys %}
+                    <tr>
+                        <td>{{ survey.date_conducted|date:"d/m/Y" }}</td>
+                        <td>{{ survey.respondent_name }}</td>
+                        <td>{{ survey.respondent_role }}</td>
+                        <td>
+                            <span class="badge bg-{% if survey.nps_score >= 9 %}success{% elif survey.nps_score >= 7 %}warning{% else %}danger{% endif %}">
+                                {{ survey.nps_score }}
+                            </span>
+                        </td>
+                        {% for service in client.services.all %}
+                        <td>
+                            {% for ss in survey.service_scores.all %}
+                                {% if ss.service_id == service.id %}
+                                    {{ ss.score }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        {% endfor %}
+                        <td>{{ survey.comments|truncatewords:10 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Nenhuma pesquisa realizada para este cliente.
+    {% if user.is_researcher or user.is_director %}
+    <a href="{% url 'surveys:create' %}?client={{ client.pk }}">Criar primeira pesquisa</a>.
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if surveys %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('{% url "surveys:dashboard" client.pk %}?format=json')
+        .then(response => response.json())
+        .then(data => {
+            // Formatar datas
+            const labels = data.labels.map(d => {
+                const date = new Date(d + 'T00:00:00');
+                return date.toLocaleDateString('pt-BR');
+            });
+
+            // Gráfico NPS
+            new Chart(document.getElementById('npsChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'NPS Geral',
+                        data: data.nps_scores,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { min: 0, max: 10 }
+                    }
+                }
+            });
+
+            // Gráfico por serviço
+            const colors = ['#198754', '#dc3545', '#ffc107', '#0dcaf0', '#6f42c1', '#fd7e14'];
+            const datasets = [];
+            let colorIdx = 0;
+
+            for (const [serviceName, scores] of Object.entries(data.services)) {
+                const color = colors[colorIdx % colors.length];
+                datasets.push({
+                    label: serviceName,
+                    data: scores.map(s => s.score),
+                    borderColor: color,
+                    tension: 0.3,
+                    fill: false,
+                });
+                colorIdx++;
+            }
+
+            new Chart(document.getElementById('servicesChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets,
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { min: 0, max: 10 }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endif %}
+{% endblock %}

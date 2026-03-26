@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Agenda - NPS System{% endblock %}
+
+{% block extra_css %}
+<style>
+    #calendar { max-width: 1100px; margin: 0 auto; }
+    .fc-event { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-calendar3"></i> Agenda de Pesquisas</h2>
+
+<div class="card">
+    <div class="card-body">
+        <div class="mb-3">
+            <span class="badge bg-success">Pendente</span>
+            <span class="badge bg-primary">Concluída</span>
+            <span class="badge bg-danger">Atrasada</span>
+        </div>
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Próximas Pesquisas -->
+<div class="card mt-4">
+    <div class="card-header"><strong><i class="bi bi-list-check"></i> Próximas Pesquisas Agendadas</strong></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Filial</th>
+                        <th>Data Agendada</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in upcoming %}
+                    <tr>
+                        <td>{{ item.client.name }}</td>
+                        <td>{{ item.client.branch }}</td>
+                        <td>{{ item.scheduled_date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if item.is_overdue %}
+                            <span class="badge bg-danger">Atrasada</span>
+                            {% else %}
+                            <span class="badge bg-success">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'surveys:create' %}?client={{ item.client.pk }}" class="btn btn-sm btn-outline-success" title="Realizar Pesquisa">
+                                <i class="bi bi-clipboard-plus"></i>
+                            </a>
+                            <a href="{% url 'clients:detail' item.client.pk %}" class="btn btn-sm btn-outline-primary" title="Ver Cliente">
+                                <i class="bi bi-graph-up"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-3">Nenhuma pesquisa agendada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de detalhes -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Data:</strong> <span id="eventDate"></span></p>
+                <p><strong>Filial:</strong> <span id="eventBranch"></span></p>
+                <p><strong>Status:</strong> <span id="eventStatus"></span></p>
+            </div>
+            <div class="modal-footer">
+                <a id="eventSurveyLink" href="#" class="btn btn-success">
+                    <i class="bi bi-clipboard-plus"></i> Realizar Pesquisa
+                </a>
+                <a id="eventDashboardLink" href="#" class="btn btn-primary">
+                    <i class="bi bi-graph-up"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const initialDate = '{{ initial_date }}';
+
+    const calendarOptions = {
+        locale: 'pt-br',
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,dayGridWeek,listMonth'
+        },
+        events: JSON.parse('{{ events_json|escapejs }}'),
+        eventClick: function(info) {
+            const props = info.event.extendedProps;
+            const clientId = props.client_id;
+
+            document.getElementById('eventTitle').textContent = info.event.title;
+            document.getElementById('eventDate').textContent = new Date(info.event.startStr).toLocaleDateString('pt-BR');
+            document.getElementById('eventBranch').textContent = props.branch;
+            document.getElementById('eventStatus').textContent = props.status;
+            document.getElementById('eventSurveyLink').href = `/surveys/create/?client=${clientId}`;
+            document.getElementById('eventDashboardLink').href = `/clients/${clientId}/`;
+
+            new bootstrap.Modal(document.getElementById('eventModal')).show();
+        },
+    };
+
+    // Navegar para o mês da próxima pesquisa agendada
+    if (initialDate) {
+        calendarOptions.initialDate = initialDate;
+    }
+
+    const calendar = new FullCalendar.Calendar(calendarEl, calendarOptions);
+    calendar.render();
+});
+</script>
+{% endblock %}

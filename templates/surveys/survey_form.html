@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Pesquisa - NPS System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="mb-4"><i class="bi bi-clipboard-plus"></i> Nova Pesquisa</h2>
+        <div class="card">
+            <div class="card-body">
+                <form method="post" id="surveyForm">
+                    {% csrf_token %}
+
+                    <!-- Cliente -->
+                    <div class="mb-3">
+                        <label for="id_client" class="form-label">Cliente <span class="text-danger">*</span></label>
+                        {{ form.client }}
+                        {% if form.client.errors %}
+                        <div class="text-danger small">{% for e in form.client.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Data -->
+                    <div class="mb-3">
+                        <label for="id_date_conducted" class="form-label">Data da Pesquisa <span class="text-danger">*</span></label>
+                        {{ form.date_conducted }}
+                        {% if form.date_conducted.errors %}
+                        <div class="text-danger small">{% for e in form.date_conducted.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Respondente -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_respondent_name" class="form-label">Nome do Respondente <span class="text-danger">*</span></label>
+                            <input type="text" name="respondent_name" id="id_respondent_name"
+                                   class="form-control" value="{{ form.respondent_name.value|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_respondent_role" class="form-label">Cargo <span class="text-danger">*</span></label>
+                            <input type="text" name="respondent_role" id="id_respondent_role"
+                                   class="form-control" value="{{ form.respondent_role.value|default:'' }}" required>
+                        </div>
+                    </div>
+
+                    <!-- Notas por serviço -->
+                    <div id="serviceScores" class="mb-3">
+                        <h5>Notas por Serviço</h5>
+                        {% if client_services %}
+                        {% for service in client_services %}
+                        <div class="row mb-2 align-items-center">
+                            <div class="col-md-6">
+                                <label class="form-label mb-0">{{ service.name }}</label>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="number" name="score_{{ service.id }}" min="0" max="10"
+                                       class="form-control" placeholder="0-10" required>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted" id="noServicesMsg">Selecione um cliente para ver os serviços.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- NPS Geral -->
+                    <div class="mb-3">
+                        <label for="id_nps_score" class="form-label">
+                            Nota Geral NPS (0-10) <span class="text-danger">*</span>
+                        </label>
+                        <p class="form-text mb-1">O cliente indicaria a empresa para outras pessoas?</p>
+                        {{ form.nps_score }}
+                    </div>
+
+                    <!-- Pontos Fortes -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-hand-thumbs-up"></i> Pontos Fortes</label>
+                        <div class="border rounded p-3">
+                            {% for checkbox in form.strengths %}
+                            <div class="form-check">
+                                {{ checkbox.tag }}
+                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                    {{ checkbox.choice_label }}
+                                </label>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted mb-0">Nenhum ponto forte cadastrado.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Pontos a Melhorar -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-hand-thumbs-down"></i> Pontos a Melhorar</label>
+                        <div class="border rounded p-3">
+                            {% for checkbox in form.improvements %}
+                            <div class="form-check">
+                                {{ checkbox.tag }}
+                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                    {{ checkbox.choice_label }}
+                                </label>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted mb-0">Nenhum ponto a melhorar cadastrado.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Comentários -->
+                    <div class="mb-3">
+                        <label for="id_comments" class="form-label">Comentários</label>
+                        {{ form.comments }}
+                    </div>
+
+                    <!-- Pesquisa histórica -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="is_historical" id="id_is_historical" class="form-check-input"
+                               {% if form.is_historical.value %}checked{% endif %}>
+                        <label for="id_is_historical" class="form-check-label">
+                            Pesquisa Histórica (realizada antes do sistema)
+                        </label>
+                        <p class="form-text">Se marcado, não será agendada a próxima pesquisa automaticamente.</p>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar Pesquisa</button>
+                        <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clientSelect = document.getElementById('id_client');
+    const serviceScoresDiv = document.getElementById('serviceScores');
+
+    if (clientSelect) {
+        clientSelect.addEventListener('change', function() {
+            const clientId = this.value;
+            if (!clientId) {
+                serviceScoresDiv.innerHTML = '<h5>Notas por Serviço</h5><p class="text-muted">Selecione um cliente para ver os serviços.</p>';
+                return;
+            }
+
+            fetch(`/surveys/api/client/${clientId}/services/`)
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<h5>Notas por Serviço</h5>';
+                    if (data.services.length === 0) {
+                        html += '<p class="text-muted">Este cliente não possui serviços cadastrados.</p>';
+                    } else {
+                        data.services.forEach(service => {
+                            html += `
+                            <div class="row mb-2 align-items-center">
+                                <div class="col-md-6">
+                                    <label class="form-label mb-0">${service.name}</label>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="number" name="score_${service.id}" min="0" max="10"
+                                           class="form-control" placeholder="0-10" required>
+                                </div>
+                            </div>`;
+                        });
+                    }
+                    serviceScoresDiv.innerHTML = html;
+                });
+        });
+    }
+});
+</script>
+{% endblock %}

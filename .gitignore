@@ -1,0 +1,42 @@
+# --- Django ---
+*.log
+*.pot
+*.pyc
+__pycache__/
+db.sqlite3
+media/
+staticfiles/
+local_settings.py
+
+# --- Ambiente Virtual ---
+.venv/
+venv/
+ENV/
+env/
+bin/
+include/
+lib/
+
+# --- Configurações de Ambiente (Segurança) ---
+.env
+.env.local
+.env.*.local
+secrets.json
+
+# --- IDEs/Editores ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Mac/OS ---
+.DS_Store
+
+# --- Outros ---
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info
