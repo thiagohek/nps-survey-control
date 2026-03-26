@@ -1,13 +1,12 @@
-import json
-
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Avg
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 
 from accounts.mixins import ResearcherOrDirectorMixin
-from schedule.models import ScheduledSurvey
+from contracts.models import ContractService
 from .forms import ClientForm
-from .models import Client, ClientService
+from .models import Client
 
 
 class ClientListView(LoginRequiredMixin, ListView):
@@ -17,10 +16,12 @@ class ClientListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related('branch').prefetch_related('services')
+        qs = super().get_queryset().select_related('branch').prefetch_related(
+            'services', 'contracts'
+        )
         user = self.request.user
 
-        # Gerente só vê clientes das suas filiais
+        # Gerente so ve clientes das suas filiais
         if user.is_manager():
             qs = qs.filter(branch__in=user.branch.all())
 
@@ -54,39 +55,35 @@ class ClientDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Serviços
-        context['client_services'] = ClientService.objects.filter(
-            client=self.object
-        ).select_related('service').order_by('-is_active', 'service__name')
+        # Servicos do contrato ativo
+        active_contract = self.object.active_contract
+        if active_contract:
+            context['contract_services'] = ContractService.objects.filter(
+                contract=active_contract
+            ).select_related('service').order_by('service__name')
+        else:
+            context['contract_services'] = []
 
-        # Próxima pesquisa agendada
-        try:
-            context['next_survey'] = ScheduledSurvey.objects.get(client=self.object)
-        except ScheduledSurvey.DoesNotExist:
-            context['next_survey'] = None
-
-        # Todas as pesquisas (ordenadas cronologicamente para gráficos)
-        surveys = list(
-            self.object.surveys
-            .order_by('date_conducted')
-            .prefetch_related('service_scores__service', 'strengths', 'improvements')
+        # Contratos do cliente com resumo
+        contracts = (
+            self.object.contracts
+            .prefetch_related('surveys')
+            .order_by('-start_date')
         )
-        context['surveys'] = surveys
 
-        # Dados JSON para Chart.js (inline, sem AJAX)
-        if surveys:
-            chart_data = {
-                'labels': [s.date_conducted.strftime('%d/%m/%Y') for s in surveys],
-                'nps_scores': [s.nps_score for s in surveys],
-                'services': {},
-            }
-            for survey in surveys:
-                for ss in survey.service_scores.all():
-                    name = ss.service.name
-                    if name not in chart_data['services']:
-                        chart_data['services'][name] = []
-                    chart_data['services'][name].append(ss.score)
-            context['chart_data_json'] = json.dumps(chart_data)
+        contracts_data = []
+        for contract in contracts:
+            surveys = contract.surveys.all()
+            survey_count = surveys.count()
+            avg_nps = surveys.aggregate(avg=Avg('nps_score'))['avg']
+            contracts_data.append({
+                'contract': contract,
+                'survey_count': survey_count,
+                'avg_nps': round(avg_nps, 1) if avg_nps else None,
+            })
+
+        context['contracts_data'] = contracts_data
+        context['has_active_contract'] = self.object.has_active_contract
 
         return context
 

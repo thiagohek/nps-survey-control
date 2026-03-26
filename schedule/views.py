@@ -16,7 +16,7 @@ class CalendarView(LoginRequiredMixin, TemplateView):
 
         scheduled = (
             ScheduledSurvey.objects
-            .select_related('client', 'client__branch')
+            .select_related('contract', 'contract__client', 'contract__client__branch')
             .order_by('scheduled_date')
         )
 
@@ -35,12 +35,13 @@ class CalendarView(LoginRequiredMixin, TemplateView):
 
             events.append({
                 'id': s.pk,
-                'title': s.client.name,
+                'title': s.contract.client.name,
                 'start': s.scheduled_date.isoformat(),
                 'color': color_map.get(status, '#6c757d'),
                 'extendedProps': {
-                    'client_id': s.client.pk,
-                    'branch': str(s.client.branch),
+                    'client_id': s.contract.client.pk,
+                    'contract_id': s.contract.pk,
+                    'branch': str(s.contract.client.branch),
                     'status': s.get_status_display(),
                 },
             })
@@ -65,7 +66,9 @@ class CalendarEventsApiView(LoginRequiredMixin, View):
         start = request.GET.get('start')
         end = request.GET.get('end')
 
-        qs = ScheduledSurvey.objects.select_related('client', 'client__branch')
+        qs = ScheduledSurvey.objects.select_related(
+            'contract', 'contract__client', 'contract__client__branch'
+        )
 
         if start:
             qs = qs.filter(scheduled_date__gte=start)
@@ -73,9 +76,9 @@ class CalendarEventsApiView(LoginRequiredMixin, View):
             qs = qs.filter(scheduled_date__lte=end)
 
         color_map = {
-            ScheduledSurvey.Status.PENDING: '#28a745',   # verde
-            ScheduledSurvey.Status.COMPLETED: '#007bff', # azul
-            ScheduledSurvey.Status.OVERDUE: '#dc3545',   # vermelho
+            ScheduledSurvey.Status.PENDING: '#28a745',
+            ScheduledSurvey.Status.COMPLETED: '#007bff',
+            ScheduledSurvey.Status.OVERDUE: '#dc3545',
         }
 
         events = []
@@ -86,12 +89,13 @@ class CalendarEventsApiView(LoginRequiredMixin, View):
 
             events.append({
                 'id': scheduled.pk,
-                'title': scheduled.client.name,
+                'title': scheduled.contract.client.name,
                 'start': scheduled.scheduled_date.isoformat(),
                 'color': color_map.get(status, '#6c757d'),
                 'extendedProps': {
-                    'client_id': scheduled.client.pk,
-                    'branch': str(scheduled.client.branch),
+                    'client_id': scheduled.contract.client.pk,
+                    'contract_id': scheduled.contract.pk,
+                    'branch': str(scheduled.contract.client.branch),
                     'status': scheduled.get_status_display(),
                 },
             })

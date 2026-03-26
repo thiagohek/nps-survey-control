@@ -8,17 +8,19 @@
         <h2 class="mb-4"><i class="bi bi-clipboard-plus"></i> Nova Pesquisa</h2>
         <div class="card">
             <div class="card-body">
+                {% if selected_contract %}
+                <div class="alert alert-info">
+                    <strong>Cliente:</strong> {{ selected_contract.client.name }}<br>
+                    <strong>Contrato:</strong> {{ selected_contract.start_date|date:"d/m/Y" }} -
+                    {% if selected_contract.end_date %}{{ selected_contract.end_date|date:"d/m/Y" }}{% else %}Em vigor{% endif %}<br>
+                    <strong>Porte:</strong> {{ selected_contract.get_company_size_display }}
+                    (pesquisa a cada {{ selected_contract.survey_frequency_days }} dias)
+                </div>
+                {% endif %}
+
                 <form method="post" id="surveyForm">
                     {% csrf_token %}
-
-                    <!-- Cliente -->
-                    <div class="mb-3">
-                        <label for="id_client" class="form-label">Cliente <span class="text-danger">*</span></label>
-                        {{ form.client }}
-                        {% if form.client.errors %}
-                        <div class="text-danger small">{% for e in form.client.errors %}{{ e }}{% endfor %}</div>
-                        {% endif %}
-                    </div>
+                    {{ form.contract }}
 
                     <!-- Data -->
                     <div class="mb-3">
@@ -43,23 +45,23 @@
                         </div>
                     </div>
 
-                    <!-- Notas por serviço -->
+                    <!-- Notas por servico -->
                     <div id="serviceScores" class="mb-3">
-                        <h5>Notas por Serviço</h5>
-                        {% if client_services %}
-                        {% for service in client_services %}
+                        <h5>Notas por Servico</h5>
+                        {% if contract_services %}
+                        {% for cs in contract_services %}
                         <div class="row mb-2 align-items-center">
                             <div class="col-md-6">
-                                <label class="form-label mb-0">{{ service.name }}</label>
+                                <label class="form-label mb-0">{{ cs.service.name }}</label>
                             </div>
                             <div class="col-md-6">
-                                <input type="number" name="score_{{ service.id }}" min="0" max="10"
+                                <input type="number" name="score_{{ cs.service.id }}" min="0" max="10"
                                        class="form-control" placeholder="0-10" required>
                             </div>
                         </div>
                         {% endfor %}
                         {% else %}
-                        <p class="text-muted" id="noServicesMsg">Selecione um cliente para ver os serviços.</p>
+                        <p class="text-muted">Nenhum servico vinculado ao contrato.</p>
                         {% endif %}
                     </div>
 
@@ -106,71 +108,41 @@
                         </div>
                     </div>
 
-                    <!-- Comentários -->
+                    <!-- Comentarios -->
                     <div class="mb-3">
-                        <label for="id_comments" class="form-label">Comentários</label>
+                        <label for="id_comments" class="form-label">Comentarios</label>
                         {{ form.comments }}
                     </div>
 
-                    <!-- Pesquisa histórica -->
+                    <!-- Pesquisa historica -->
                     <div class="mb-3 form-check">
                         <input type="checkbox" name="is_historical" id="id_is_historical" class="form-check-input"
                                {% if form.is_historical.value %}checked{% endif %}>
                         <label for="id_is_historical" class="form-check-label">
-                            Pesquisa Histórica (realizada antes do sistema)
+                            Pesquisa Historica (realizada antes do sistema)
                         </label>
-                        <p class="form-text">Se marcado, não será agendada a próxima pesquisa automaticamente.</p>
+                        <p class="form-text">Se marcado, nao sera agendada a proxima pesquisa automaticamente.</p>
                     </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Salvar Pesquisa</button>
+                        {% if selected_contract %}
+                        <a href="{% url 'contracts:detail' selected_contract.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+                        {% else %}
                         <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        {% endif %}
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const clientSelect = document.getElementById('id_client');
-    const serviceScoresDiv = document.getElementById('serviceScores');
-
-    if (clientSelect) {
-        clientSelect.addEventListener('change', function() {
-            const clientId = this.value;
-            if (!clientId) {
-                serviceScoresDiv.innerHTML = '<h5>Notas por Serviço</h5><p class="text-muted">Selecione um cliente para ver os serviços.</p>';
-                return;
-            }
-
-            fetch(`/surveys/api/client/${clientId}/services/`)
-                .then(response => response.json())
-                .then(data => {
-                    let html = '<h5>Notas por Serviço</h5>';
-                    if (data.services.length === 0) {
-                        html += '<p class="text-muted">Este cliente não possui serviços cadastrados.</p>';
-                    } else {
-                        data.services.forEach(service => {
-                            html += `
-                            <div class="row mb-2 align-items-center">
-                                <div class="col-md-6">
-                                    <label class="form-label mb-0">${service.name}</label>
-                                </div>
-                                <div class="col-md-6">
-                                    <input type="number" name="score_${service.id}" min="0" max="10"
-                                           class="form-control" placeholder="0-10" required>
-                                </div>
-                            </div>`;
-                        });
-                    }
-                    serviceScoresDiv.innerHTML = html;
-                });
-        });
-    }
-});
-</script>
 {% endblock %}

@@ -32,11 +32,11 @@ class Improvement(models.Model):
 
 
 class Survey(models.Model):
-    client = models.ForeignKey(
-        'clients.Client',
-        on_delete=models.CASCADE,
+    contract = models.ForeignKey(
+        'contracts.Contract',
+        on_delete=models.PROTECT,
         related_name='surveys',
-        verbose_name='Cliente',
+        verbose_name='Contrato',
     )
     date_conducted = models.DateField('Data da Pesquisa')
     respondent_name = models.CharField('Nome do Respondente', max_length=200)
@@ -74,10 +74,10 @@ class Survey(models.Model):
         verbose_name = 'Pesquisa'
         verbose_name_plural = 'Pesquisas'
         ordering = ['-date_conducted']
-        unique_together = ['client', 'date_conducted']
+        unique_together = ['contract', 'date_conducted']
 
     def __str__(self):
-        return f'{self.client.name} - {self.date_conducted}'
+        return f'{self.contract.client.name} - {self.date_conducted}'
 
 
 class ServiceScore(models.Model):

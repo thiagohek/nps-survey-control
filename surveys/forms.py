@@ -7,12 +7,12 @@ class SurveyForm(forms.ModelForm):
     class Meta:
         model = Survey
         fields = [
-            'client', 'date_conducted', 'respondent_name',
+            'contract', 'date_conducted', 'respondent_name',
             'respondent_role', 'nps_score', 'strengths', 'improvements',
             'comments', 'is_historical',
         ]
         widgets = {
-            'client': forms.Select(attrs={'class': 'form-select'}),
+            'contract': forms.HiddenInput(),
             'date_conducted': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'comments': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'nps_score': forms.NumberInput(attrs={'min': 0, 'max': 10, 'class': 'form-control'}),
@@ -27,15 +27,15 @@ class SurveyForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        client = cleaned.get('client')
+        contract = cleaned.get('contract')
         date = cleaned.get('date_conducted')
-        if client and date:
-            qs = Survey.objects.filter(client=client, date_conducted=date)
+        if contract and date:
+            qs = Survey.objects.filter(contract=contract, date_conducted=date)
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise forms.ValidationError(
-                    'Já existe uma pesquisa para este cliente nesta data.'
+                    'Já existe uma pesquisa para este contrato nesta data.'
                 )
         return cleaned
 

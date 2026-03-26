@@ -9,12 +9,16 @@ class ServiceScoreInline(admin.TabularInline):
 
 @admin.register(Survey)
 class SurveyAdmin(admin.ModelAdmin):
-    list_display = ('client', 'date_conducted', 'nps_score', 'respondent_name', 'is_historical', 'created_by')
-    list_filter = ('is_historical', 'date_conducted', 'client__branch')
-    search_fields = ('client__name', 'respondent_name')
+    list_display = ('get_client_name', 'contract', 'date_conducted', 'nps_score', 'respondent_name', 'is_historical', 'created_by')
+    list_filter = ('is_historical', 'date_conducted', 'contract__client__branch')
+    search_fields = ('contract__client__name', 'respondent_name')
     date_hierarchy = 'date_conducted'
     inlines = [ServiceScoreInline]
     filter_horizontal = ('strengths', 'improvements')
+
+    @admin.display(description='Cliente', ordering='contract__client__name')
+    def get_client_name(self, obj):
+        return obj.contract.client.name
 
 
 @admin.register(Strength)

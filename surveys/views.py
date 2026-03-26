@@ -6,8 +6,8 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import CreateView, ListView
 
-from clients.models import Client
-from .forms import SurveyForm, ServiceScoreForm
+from contracts.models import Contract, ContractService
+from .forms import SurveyForm
 from .models import Survey, ServiceScore
 
 
@@ -18,20 +18,23 @@ class SurveyCreateView(LoginRequiredMixin, CreateView):
 
     def get_initial(self):
         initial = super().get_initial()
-        client_id = self.request.GET.get('client')
-        if client_id:
-            initial['client'] = client_id
+        contract_id = self.request.GET.get('contract')
+        if contract_id:
+            initial['contract'] = contract_id
         return initial
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        client_id = self.request.GET.get('client') or self.request.POST.get('client')
-        if client_id:
+        contract_id = self.request.GET.get('contract') or self.request.POST.get('contract')
+        if contract_id:
             try:
-                client = Client.objects.get(pk=client_id)
-                context['selected_client'] = client
-                context['client_services'] = client.active_services
-            except Client.DoesNotExist:
+                contract = Contract.objects.select_related('client').get(pk=contract_id)
+                context['selected_contract'] = contract
+                context['contract_services'] = list(
+                    ContractService.objects.filter(contract=contract)
+                    .select_related('service')
+                )
+            except Contract.DoesNotExist:
                 pass
         return context
 
@@ -39,30 +42,38 @@ class SurveyCreateView(LoginRequiredMixin, CreateView):
         form.instance.created_by = self.request.user
         survey = form.save()
 
-        # Salvar notas por serviço
-        client = survey.client
-        for service in client.active_services:
-            score_value = self.request.POST.get(f'score_{service.id}')
+        # Salvar notas por serviço (do contrato, não do cliente)
+        contract = survey.contract
+        contract_services = ContractService.objects.filter(
+            contract=contract
+        ).select_related('service')
+
+        for cs in contract_services:
+            score_value = self.request.POST.get(f'score_{cs.service_id}')
             if score_value:
                 ServiceScore.objects.create(
                     survey=survey,
-                    service=service,
+                    service=cs.service,
                     score=int(score_value),
                 )
+
+        # Atualizar last_survey_date do contrato
+        contract.last_survey_date = survey.date_conducted
+        contract.save(update_fields=['last_survey_date'])
 
         # Agendar próxima pesquisa se não for histórica
         if not survey.is_historical:
             self._schedule_next_survey(survey)
 
-        return redirect('clients:detail', pk=client.pk)
+        return redirect('contracts:detail', pk=contract.pk)
 
     def _schedule_next_survey(self, survey):
         from schedule.models import ScheduledSurvey
-        client = survey.client
-        next_date = survey.date_conducted + timedelta(days=client.survey_frequency_days)
+        contract = survey.contract
+        next_date = survey.date_conducted + timedelta(days=contract.survey_frequency_days)
 
         ScheduledSurvey.objects.update_or_create(
-            client=client,
+            contract=contract,
             defaults={
                 'scheduled_date': next_date,
                 'status': ScheduledSurvey.Status.PENDING,
@@ -78,25 +89,39 @@ class SurveyListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related('client', 'client__branch', 'created_by')
+        qs = super().get_queryset().select_related(
+            'contract', 'contract__client', 'contract__client__branch', 'created_by'
+        )
+        contract_id = self.request.GET.get('contract')
+        if contract_id:
+            qs = qs.filter(contract_id=contract_id)
         client_id = self.request.GET.get('client')
         if client_id:
-            qs = qs.filter(client_id=client_id)
+            qs = qs.filter(contract__client_id=client_id)
         return qs
 
 
 class DashboardView(LoginRequiredMixin, View):
-    """Redireciona para a página unificada do cliente."""
+    """Redireciona para a página do contrato ou do cliente."""
     def get(self, request, client_id):
         return redirect('clients:detail', pk=client_id)
 
 
-class ClientServicesApiView(LoginRequiredMixin, View):
-    """API para carregar serviços de um cliente (usado no formulário)."""
-    def get(self, request, client_id):
-        client = get_object_or_404(Client, pk=client_id)
-        services = list(client.active_services.values('id', 'name'))
-        return JsonResponse({'services': services})
+class ContractServicesApiView(LoginRequiredMixin, View):
+    """API para carregar serviços de um contrato (usado no formulário)."""
+    def get(self, request, contract_id):
+        contract = get_object_or_404(Contract, pk=contract_id)
+        services = list(
+            ContractService.objects.filter(contract=contract)
+            .select_related('service')
+            .values('service__id', 'service__name')
+        )
+        return JsonResponse({
+            'services': [
+                {'id': s['service__id'], 'name': s['service__name']}
+                for s in services
+            ]
+        })
 
 
 class SurveyDetailApiView(LoginRequiredMixin, View):

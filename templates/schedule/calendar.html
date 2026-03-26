@@ -16,33 +16,35 @@
     <div class="card-body">
         <div class="mb-3">
             <span class="badge bg-success">Pendente</span>
-            <span class="badge bg-primary">Concluída</span>
+            <span class="badge bg-primary">Concluida</span>
             <span class="badge bg-danger">Atrasada</span>
         </div>
         <div id="calendar"></div>
     </div>
 </div>
 
-<!-- Próximas Pesquisas -->
+<!-- Proximas Pesquisas -->
 <div class="card mt-4">
-    <div class="card-header"><strong><i class="bi bi-list-check"></i> Próximas Pesquisas Agendadas</strong></div>
+    <div class="card-header"><strong><i class="bi bi-list-check"></i> Proximas Pesquisas Agendadas</strong></div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
                         <th>Cliente</th>
+                        <th>Contrato</th>
                         <th>Filial</th>
                         <th>Data Agendada</th>
                         <th>Status</th>
-                        <th>Ações</th>
+                        <th>Acoes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in upcoming %}
                     <tr>
-                        <td>{{ item.client.name }}</td>
-                        <td>{{ item.client.branch }}</td>
+                        <td>{{ item.contract.client.name }}</td>
+                        <td><a href="{% url 'contracts:detail' item.contract.pk %}">{{ item.contract.start_date|date:"d/m/Y" }}</a></td>
+                        <td>{{ item.contract.client.branch }}</td>
                         <td>{{ item.scheduled_date|date:"d/m/Y" }}</td>
                         <td>
                             {% if item.is_overdue %}
@@ -52,17 +54,17 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'surveys:create' %}?client={{ item.client.pk }}" class="btn btn-sm btn-outline-success" title="Realizar Pesquisa">
+                            <a href="{% url 'surveys:create' %}?contract={{ item.contract.pk }}" class="btn btn-sm btn-outline-success" title="Realizar Pesquisa">
                                 <i class="bi bi-clipboard-plus"></i>
                             </a>
-                            <a href="{% url 'clients:detail' item.client.pk %}" class="btn btn-sm btn-outline-primary" title="Ver Cliente">
+                            <a href="{% url 'contracts:detail' item.contract.pk %}" class="btn btn-sm btn-outline-primary" title="Ver Contrato">
                                 <i class="bi bi-graph-up"></i>
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-3">Nenhuma pesquisa agendada.</td>
+                        <td colspan="6" class="text-center text-muted py-3">Nenhuma pesquisa agendada.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -88,8 +90,8 @@
                 <a id="eventSurveyLink" href="#" class="btn btn-success">
                     <i class="bi bi-clipboard-plus"></i> Realizar Pesquisa
                 </a>
-                <a id="eventDashboardLink" href="#" class="btn btn-primary">
-                    <i class="bi bi-graph-up"></i> Dashboard
+                <a id="eventContractLink" href="#" class="btn btn-primary">
+                    <i class="bi bi-file-earmark-text"></i> Ver Contrato
                 </a>
             </div>
         </div>
@@ -115,20 +117,19 @@ document.addEventListener('DOMContentLoaded', function() {
         events: JSON.parse('{{ events_json|escapejs }}'),
         eventClick: function(info) {
             const props = info.event.extendedProps;
-            const clientId = props.client_id;
+            const contractId = props.contract_id;
 
             document.getElementById('eventTitle').textContent = info.event.title;
             document.getElementById('eventDate').textContent = new Date(info.event.startStr).toLocaleDateString('pt-BR');
             document.getElementById('eventBranch').textContent = props.branch;
             document.getElementById('eventStatus').textContent = props.status;
-            document.getElementById('eventSurveyLink').href = `/surveys/create/?client=${clientId}`;
-            document.getElementById('eventDashboardLink').href = `/clients/${clientId}/`;
+            document.getElementById('eventSurveyLink').href = `/surveys/create/?contract=${contractId}`;
+            document.getElementById('eventContractLink').href = `/contracts/${contractId}/`;
 
             new bootstrap.Modal(document.getElementById('eventModal')).show();
         },
     };
 
-    // Navegar para o mês da próxima pesquisa agendada
     if (initialDate) {
         calendarOptions.initialDate = initialDate;
     }

@@ -71,9 +71,15 @@
                         <i class="bi bi-graph-up"></i>
                     </a>
                     {% if user.is_researcher or user.is_director %}
-                    <a href="{% url 'surveys:create' %}?client={{ client.pk }}" class="btn btn-sm btn-outline-success" title="Nova Pesquisa">
-                        <i class="bi bi-clipboard-plus"></i>
-                    </a>
+                        {% if client.active_contract %}
+                        <a href="{% url 'surveys:create' %}?contract={{ client.active_contract.pk }}" class="btn btn-sm btn-outline-success" title="Nova Pesquisa">
+                            <i class="bi bi-clipboard-plus"></i>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'contracts:create' %}?client={{ client.pk }}" class="btn btn-sm btn-outline-warning" title="Novo Contrato">
+                            <i class="bi bi-file-earmark-plus"></i>
+                        </a>
+                        {% endif %}
                     <a href="{% url 'clients:update' client.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar">
                         <i class="bi bi-pencil"></i>
                     </a>

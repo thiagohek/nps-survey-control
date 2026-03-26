@@ -8,11 +8,11 @@ class ScheduledSurvey(models.Model):
         COMPLETED = 'C', 'Concluída'
         OVERDUE = 'O', 'Atrasada'
 
-    client = models.OneToOneField(
-        'clients.Client',
+    contract = models.OneToOneField(
+        'contracts.Contract',
         on_delete=models.CASCADE,
         related_name='scheduled_survey',
-        verbose_name='Cliente',
+        verbose_name='Contrato',
     )
     scheduled_date = models.DateField('Data Agendada')
     status = models.CharField(
@@ -36,7 +36,7 @@ class ScheduledSurvey(models.Model):
         ordering = ['scheduled_date']
 
     def __str__(self):
-        return f'{self.client.name} - {self.scheduled_date}'
+        return f'{self.contract.client.name} - {self.scheduled_date}'
 
     @property
     def is_overdue(self):

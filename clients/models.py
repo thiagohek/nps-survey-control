@@ -43,6 +43,15 @@ class Client(models.Model):
         return self.FREQUENCY_MAP[self.size]
 
     @property
+    def active_contract(self):
+        """Retorna o contrato ativo do cliente, ou None."""
+        return self.contracts.filter(status='active').first()
+
+    @property
+    def has_active_contract(self):
+        return self.contracts.filter(status='active').exists()
+
+    @property
     def active_services(self):
         """Retorna apenas os serviços ativos do cliente."""
         return self.services.filter(clientservice__is_active=True)
