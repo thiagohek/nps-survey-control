@@ -1,0 +1,785 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard CEO | NPS Seguridade{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ===== Dashboard CEO ===== */
+.kpi-card {
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    border-left: 4px solid var(--brand-red);
+    height: 100%;
+}
+.kpi-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+.kpi-card .kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+.kpi-card .kpi-value {
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.kpi-card .kpi-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+}
+.nps-big {
+    font-size: 3.75rem;
+    font-weight: 900;
+    line-height: 1;
+}
+.zone-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 0.5rem;
+}
+.zone-success  { background: #e8f5e9; color: #2e7d32; }
+.zone-info     { background: #e3f2fd; color: #1565c0; }
+.zone-warning  { background: #fff8e1; color: #f57f17; }
+.zone-danger   { background: #ffebee; color: #c62828; }
+.zone-secondary{ background: #eceff1; color: #546e7a; }
+
+.medal-gold   { color: #f9a825; }
+.medal-silver { color: #9e9e9e; }
+.medal-bronze { color: #795548; }
+
+.urgent-card {
+    border: 2px solid #c62828 !important;
+}
+.urgent-header {
+    background: #c62828;
+    color: #fff;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+/* ===== Impressão ===== */
+@media print {
+    .no-print { display: none !important; }
+    body { padding-top: 0 !important; background: #fff !important; font-size: 11px; }
+    nav.navbar { display: none !important; }
+    main { padding: 0.5rem !important; }
+    .print-header { display: block !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+    .kpi-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    .row { break-inside: avoid; }
+    h4.page-title { display: none; }
+    canvas { max-height: 220px !important; }
+}
+.print-header {
+    display: none;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--brand-red);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header visível só na impressão -->
+<div class="print-header">
+    <h2 style="font-weight:800; color:#d32f2f; margin:0;">Dashboard NPS — Visão Executiva</h2>
+    <p style="color:#636e72; margin:0.25rem 0 0;">Período: {{ date_from_display }} a {{ date_to_display }}</p>
+</div>
+
+<!-- ===== HEADER DA PÁGINA ===== -->
+<div class="page-header no-print">
+    <h2>
+        <i class="bi bi-graph-up-arrow"></i>
+        Dashboard NPS — Visão Executiva
+    </h2>
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-muted small">{{ date_from_display }} — {{ date_to_display }}</span>
+        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-printer me-1"></i>Imprimir
+        </button>
+    </div>
+</div>
+
+<!-- ===== FILTROS ===== -->
+<div class="filter-bar no-print mb-4">
+    <form method="GET">
+        <div class="d-flex flex-wrap gap-3 align-items-end">
+
+            <!-- Atalhos de período -->
+            <div>
+                <div class="form-label">Período</div>
+                <div class="btn-group btn-group-sm">
+                    <a href="?preset=1{% if filial_id %}&filial={{ filial_id }}{% endif %}{% if porte %}&porte={{ porte }}{% endif %}"
+                       class="btn btn-outline-secondary {% if preset == '1' %}active{% endif %}">1 mês</a>
+                    <a href="?preset=3{% if filial_id %}&filial={{ filial_id }}{% endif %}{% if porte %}&porte={{ porte }}{% endif %}"
+                       class="btn btn-outline-secondary {% if preset == '3' %}active{% endif %}">3 meses</a>
+                    <a href="?preset=6{% if filial_id %}&filial={{ filial_id }}{% endif %}{% if porte %}&porte={{ porte }}{% endif %}"
+                       class="btn btn-outline-secondary {% if preset == '6' %}active{% endif %}">6 meses</a>
+                    <a href="?preset=12{% if filial_id %}&filial={{ filial_id }}{% endif %}{% if porte %}&porte={{ porte }}{% endif %}"
+                       class="btn btn-outline-secondary {% if preset == '12' %}active{% endif %}">12 meses</a>
+                </div>
+            </div>
+
+            <!-- Intervalo personalizado -->
+            <div class="d-flex gap-2 align-items-end">
+                <div>
+                    <label class="form-label">De</label>
+                    <input type="date" name="date_from" value="{{ date_from }}"
+                           class="form-control form-control-sm" style="width:145px;">
+                </div>
+                <div>
+                    <label class="form-label">Até</label>
+                    <input type="date" name="date_to" value="{{ date_to }}"
+                           class="form-control form-control-sm" style="width:145px;">
+                </div>
+            </div>
+
+            <!-- Regional -->
+            <div>
+                <label class="form-label">Regional</label>
+                <select name="filial" class="form-select form-select-sm" style="min-width:170px;">
+                    <option value="">Todas as regionais</option>
+                    {% for f in filiais %}
+                    <option value="{{ f.id }}" {% if filial_id == f.id|stringformat:"s" %}selected{% endif %}>
+                        {{ f.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Porte -->
+            <div>
+                <label class="form-label">Porte</label>
+                <select name="porte" class="form-select form-select-sm">
+                    <option value="">Todos os portes</option>
+                    <option value="S" {% if porte == 'S' %}selected{% endif %}>Pequeno</option>
+                    <option value="M" {% if porte == 'M' %}selected{% endif %}>Médio</option>
+                    <option value="L" {% if porte == 'L' %}selected{% endif %}>Grande</option>
+                </select>
+            </div>
+
+            <div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-funnel me-1"></i>Aplicar filtros
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ===== KPI CARDS ===== -->
+<div class="row g-3 mb-4">
+
+    <!-- NPS Geral -->
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card text-center"
+             style="border-left-color:
+                {% if nps_geral_badge == 'success' %}#2e7d32
+                {% elif nps_geral_badge == 'info' %}#1565c0
+                {% elif nps_geral_badge == 'warning' %}#f57f17
+                {% elif nps_geral_badge == 'danger' %}#c62828
+                {% else %}#9e9e9e{% endif %};">
+            <div class="kpi-label">NPS Geral</div>
+            <div class="nps-big"
+                 style="color:
+                    {% if nps_geral_badge == 'success' %}#2e7d32
+                    {% elif nps_geral_badge == 'info' %}#1565c0
+                    {% elif nps_geral_badge == 'warning' %}#f57f17
+                    {% elif nps_geral_badge == 'danger' %}#c62828
+                    {% else %}#9e9e9e{% endif %};">
+                {% if nps_geral is not None %}{{ nps_geral }}{% else %}—{% endif %}
+            </div>
+            <span class="zone-badge zone-{{ nps_geral_badge }}">{{ nps_geral_label }}</span>
+        </div>
+    </div>
+
+    <!-- Total de Pesquisas -->
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-label"><i class="bi bi-clipboard-data me-1"></i>Total de Pesquisas</div>
+            <div class="kpi-value text-dark">{{ total_pesquisas }}</div>
+            <div class="kpi-sub">
+                {{ empresas_avaliadas }} empresa{% if empresas_avaliadas != 1 %}s{% endif %} avaliada{% if empresas_avaliadas != 1 %}s{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotores -->
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card" style="border-left-color:#2e7d32;">
+            <div class="kpi-label" style="color:#2e7d32;"><i class="bi bi-emoji-smile me-1"></i>Promotores (9-10)</div>
+            <div class="kpi-value" style="color:#2e7d32;">{{ pct_promotores }}%</div>
+            <div class="kpi-sub">Indicariam com certeza</div>
+        </div>
+    </div>
+
+    <!-- Detratores -->
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card" style="border-left-color:#c62828;">
+            <div class="kpi-label" style="color:#c62828;"><i class="bi bi-emoji-frown me-1"></i>Detratores (0-6)</div>
+            <div class="kpi-value" style="color:#c62828;">{{ pct_detratores }}%</div>
+            <div class="kpi-sub">{{ pct_neutros }}% neutros (7-8)</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== EVOLUÇÃO MENSAL + NPS POR PORTE ===== -->
+<div class="row g-3 mb-4">
+
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-graph-up card-title-icon"></i>
+                Evolução Mensal do NPS
+            </div>
+            <div class="card-body">
+                {% if monthly_labels_json != '[]' %}
+                <canvas id="chartEvolution" height="260"></canvas>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-graph-up"></i>
+                    <p>Sem pesquisas no período selecionado</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-bar-chart card-title-icon"></i>
+                NPS por Porte de Empresa
+            </div>
+            <div class="card-body">
+                {% if porte_labels_json != '[]' %}
+                <canvas id="chartPorte" height="260"></canvas>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-bar-chart"></i>
+                    <p>Sem dados</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== NPS POR REGIONAL + POR SERVIÇO ===== -->
+<div class="row g-3 mb-4">
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-geo-alt card-title-icon"></i>
+                NPS por Regional
+            </div>
+            <div class="card-body">
+                {% if filial_labels_json != '[]' %}
+                <canvas id="chartRegional"></canvas>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-geo-alt"></i>
+                    <p>Sem dados de regionais</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-grid card-title-icon"></i>
+                NPS por Serviço
+            </div>
+            <div class="card-body">
+                {% if service_labels_json != '[]' %}
+                <canvas id="chartServico"></canvas>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-grid"></i>
+                    <p>Sem scores de serviços no período</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== RANKING DE EMPRESAS ===== -->
+<div class="row g-3 mb-4">
+
+    <!-- Melhores -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-trophy" style="color:#f9a825;"></i>
+                Top 5 Melhores <small class="text-muted fw-normal">(média ≥ 7)</small>
+            </div>
+            {% if best_clients %}
+            <div class="card-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;">#</th>
+                            <th>Empresa</th>
+                            <th>Regional</th>
+                            <th class="text-center">Média</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in best_clients %}
+                        <tr>
+                            <td>
+                                {% if forloop.counter == 1 %}<i class="bi bi-trophy-fill medal-gold"></i>
+                                {% elif forloop.counter == 2 %}<i class="bi bi-trophy-fill medal-silver"></i>
+                                {% elif forloop.counter == 3 %}<i class="bi bi-trophy-fill medal-bronze"></i>
+                                {% else %}<span class="text-muted">{{ forloop.counter }}</span>{% endif %}
+                            </td>
+                            <td class="fw-semibold">{{ c.name }}</td>
+                            <td><span class="badge badge-branch">{{ c.branch }}</span></td>
+                            <td class="text-center">
+                                <span class="badge badge-promoter fw-bold px-2">{{ c.avg_score }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body">
+                <div class="empty-state py-3">
+                    <i class="bi bi-trophy"></i>
+                    <p>Nenhuma empresa com média ≥ 7 no período</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Piores -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-circle" style="color:#c62828;"></i>
+                Top 5 que Precisam de Atenção <small class="text-muted fw-normal">(média &lt; 7)</small>
+            </div>
+            {% if worst_clients %}
+            <div class="card-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;">#</th>
+                            <th>Empresa</th>
+                            <th>Regional</th>
+                            <th class="text-center">Média</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in worst_clients %}
+                        <tr>
+                            <td class="text-muted">{{ forloop.counter }}</td>
+                            <td class="fw-semibold">{{ c.name }}</td>
+                            <td><span class="badge badge-branch">{{ c.branch }}</span></td>
+                            <td class="text-center">
+                                <span class="badge badge-detractor fw-bold px-2">{{ c.avg_score }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body">
+                <div class="empty-state py-3">
+                    <i class="bi bi-check-circle text-success" style="font-size:2rem; opacity:1;"></i>
+                    <p class="text-success fw-semibold mt-2">Todas as empresas com média ≥ 7!</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ===== RANKING DE REGIONAIS ===== -->
+<div class="card mb-4">
+    <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-award card-title-icon"></i>
+        Ranking de Regionais — Premiação
+    </div>
+    {% if filial_ranking %}
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th style="width:80px;">Posição</th>
+                    <th>Regional</th>
+                    <th class="text-center" style="width:120px;">NPS</th>
+                    <th class="text-center" style="width:160px;">Zona</th>
+                    <th class="text-center" style="width:120px;">Pesquisas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in filial_ranking %}
+                <tr>
+                    <td>
+                        {% if forloop.counter == 1 %}
+                            <i class="bi bi-trophy-fill medal-gold fs-5 me-1"></i><strong>1º</strong>
+                        {% elif forloop.counter == 2 %}
+                            <i class="bi bi-trophy-fill medal-silver fs-5 me-1"></i><strong>2º</strong>
+                        {% elif forloop.counter == 3 %}
+                            <i class="bi bi-trophy-fill medal-bronze fs-5 me-1"></i><strong>3º</strong>
+                        {% else %}
+                            <span class="text-muted">{{ forloop.counter }}º</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-semibold">{{ f.name }}</td>
+                    <td class="text-center">
+                        <strong style="font-size:1.15rem;
+                            color:{% if f.nps_badge == 'success' %}#2e7d32{% elif f.nps_badge == 'info' %}#1565c0{% elif f.nps_badge == 'warning' %}#f57f17{% elif f.nps_badge == 'danger' %}#c62828{% else %}#9e9e9e{% endif %};">
+                            {% if f.nps is not None %}{{ f.nps }}{% else %}—{% endif %}
+                        </strong>
+                    </td>
+                    <td class="text-center">
+                        <span class="zone-badge zone-{{ f.nps_badge }}">{{ f.nps_label }}</span>
+                    </td>
+                    <td class="text-center text-muted">{{ f.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body">
+        <div class="empty-state py-3">
+            <i class="bi bi-geo-alt"></i>
+            <p>Sem dados de regionais no período</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== ATENÇÃO URGENTE ===== -->
+{% if urgent_list %}
+<div class="card mb-4 urgent-card">
+    <div class="card-header urgent-header d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <strong>Atenção Urgente</strong>
+        <span class="badge bg-white text-danger ms-1">{{ urgent_list|length }} empresa{% if urgent_list|length != 1 %}s{% endif %}</span>
+        <small class="ms-auto opacity-75">Nota &lt; 7 em 2 pesquisas consecutivas</small>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Regional</th>
+                    <th class="text-center">Última pesquisa</th>
+                    <th class="text-center">Penúltima pesquisa</th>
+                    <th>Serviços em risco</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in urgent_list %}
+                <tr>
+                    <td class="fw-semibold">{{ u.client }}</td>
+                    <td><span class="badge badge-branch">{{ u.branch }}</span></td>
+                    <td class="text-center">
+                        <span class="badge badge-detractor fw-bold" style="font-size:0.9rem;">{{ u.scores.0 }}</span>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ u.dates.0 }}</div>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-detractor fw-bold" style="font-size:0.9rem;">{{ u.scores.1 }}</span>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ u.dates.1 }}</div>
+                    </td>
+                    <td>
+                        {% if u.services %}
+                            {% for s in u.services %}
+                            <span class="badge badge-service me-1 mb-1">{{ s }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted small">Apenas nota geral</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ===== PONTOS FORTES + PONTOS DE MELHORIA ===== -->
+<div class="row g-3 mb-4">
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-hand-thumbs-up" style="color:#2e7d32;"></i>
+                Pontos Fortes mais Mencionados
+            </div>
+            <div class="card-body">
+                {% if top_strengths %}
+                <canvas id="chartPontosFortes"></canvas>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-hand-thumbs-up"></i>
+                    <p>Sem pontos fortes registrados no período</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-tools" style="color:#f57f17;"></i>
+                Pontos de Melhoria mais Mencionados
+            </div>
+            <div class="card-body">
+                {% if top_improvements %}
+                <canvas id="chartMelhorias"></canvas>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-tools"></i>
+                    <p>Sem pontos de melhoria registrados no período</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const monthlyLabels  = {{ monthly_labels_json|safe }};
+const monthlyNPS     = {{ monthly_nps_json|safe }};
+const filialLabels   = {{ filial_labels_json|safe }};
+const filialNPS      = {{ filial_nps_json|safe }};
+const filialColors   = {{ filial_colors_json|safe }};
+const porteLabels    = {{ porte_labels_json|safe }};
+const porteNPS       = {{ porte_nps_json|safe }};
+const porteColors    = {{ porte_colors_json|safe }};
+const serviceLabels  = {{ service_labels_json|safe }};
+const serviceNPS     = {{ service_nps_json|safe }};
+const serviceColors  = {{ service_colors_json|safe }};
+const strLabels      = {{ strengths_labels_json|safe }};
+const strValues      = {{ strengths_values_json|safe }};
+const impLabels      = {{ improvements_labels_json|safe }};
+const impValues      = {{ improvements_values_json|safe }};
+
+Chart.defaults.font.family = 'Inter, -apple-system, sans-serif';
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#636e72';
+
+// Plugin: linha de referência em y = 0
+const zeroLine = {
+    id: 'zeroLine',
+    afterDatasetsDraw(chart) {
+        const yScale = chart.scales['y'] || chart.scales['x'];
+        if (!yScale) return;
+        const isHorizontal = chart.config.options.indexAxis === 'y';
+        const { ctx, chartArea } = chart;
+        const pos = isHorizontal
+            ? yScale.getPixelForValue(0)
+            : chart.scales['y'].getPixelForValue(0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        if (isHorizontal) {
+            ctx.moveTo(pos, chartArea.top);
+            ctx.lineTo(pos, chartArea.bottom);
+        } else {
+            ctx.moveTo(chartArea.left, pos);
+            ctx.lineTo(chartArea.right, pos);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+};
+
+const tooltipNPS = { callbacks: { label: ctx => ` NPS: ${ctx.raw !== null ? ctx.raw : '—'}` } };
+const tooltipCount = { callbacks: { label: ctx => ` ${ctx.raw} menção(ões)` } };
+
+// 1. Evolução mensal
+if (monthlyLabels.length) {
+    new Chart(document.getElementById('chartEvolution'), {
+        type: 'line',
+        data: {
+            labels: monthlyLabels,
+            datasets: [{
+                label: 'NPS',
+                data: monthlyNPS,
+                borderColor: '#d32f2f',
+                backgroundColor: 'rgba(211,47,47,0.07)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#d32f2f',
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.3,
+                spanGaps: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: tooltipNPS },
+            scales: {
+                y: { min: -100, max: 100, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        },
+        plugins: [zeroLine]
+    });
+}
+
+// 2. NPS por Porte
+if (porteLabels.length) {
+    new Chart(document.getElementById('chartPorte'), {
+        type: 'bar',
+        data: {
+            labels: porteLabels,
+            datasets: [{
+                data: porteNPS,
+                backgroundColor: porteColors,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: tooltipNPS },
+            scales: {
+                y: { min: -100, max: 100, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        },
+        plugins: [zeroLine]
+    });
+}
+
+// 3. NPS por Regional (barras horizontais)
+if (filialLabels.length) {
+    new Chart(document.getElementById('chartRegional'), {
+        type: 'bar',
+        data: {
+            labels: filialLabels,
+            datasets: [{
+                data: filialNPS,
+                backgroundColor: filialColors,
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: tooltipNPS },
+            scales: {
+                x: { min: -100, max: 100, grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { grid: { display: false } }
+            }
+        },
+        plugins: [zeroLine]
+    });
+}
+
+// 4. NPS por Serviço (barras horizontais)
+if (serviceLabels.length) {
+    new Chart(document.getElementById('chartServico'), {
+        type: 'bar',
+        data: {
+            labels: serviceLabels,
+            datasets: [{
+                data: serviceNPS,
+                backgroundColor: serviceColors,
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: tooltipNPS },
+            scales: {
+                x: { min: -100, max: 100, grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { grid: { display: false } }
+            }
+        },
+        plugins: [zeroLine]
+    });
+}
+
+// 5. Pontos Fortes (barras horizontais, verde)
+if (strLabels.length) {
+    new Chart(document.getElementById('chartPontosFortes'), {
+        type: 'bar',
+        data: {
+            labels: strLabels,
+            datasets: [{
+                data: strValues,
+                backgroundColor: 'rgba(46,125,50,0.72)',
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: tooltipCount },
+            scales: {
+                x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { precision: 0 } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// 6. Pontos de Melhoria (barras horizontais, laranja)
+if (impLabels.length) {
+    new Chart(document.getElementById('chartMelhorias'), {
+        type: 'bar',
+        data: {
+            labels: impLabels,
+            datasets: [{
+                data: impValues,
+                backgroundColor: 'rgba(245,127,23,0.72)',
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false }, tooltip: tooltipCount },
+            scales: {
+                x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { precision: 0 } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

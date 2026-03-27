@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'surveys',
     'schedule',
     'configs',
+    'dashboard',
 ]
 
 MIDDLEWARE = [

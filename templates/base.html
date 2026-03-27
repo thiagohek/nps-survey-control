@@ -33,6 +33,12 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}"
+                           href="{% url 'dashboard:ceo' %}">
+                            <i class="bi bi-graph-up-arrow me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.app_name == 'clients' %}active{% endif %}"
                            href="{% url 'clients:list' %}">
                             <i class="bi bi-building me-1"></i>Clientes

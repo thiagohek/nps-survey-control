@@ -11,4 +11,5 @@ urlpatterns = [
     path('surveys/', include('surveys.urls')),
     path('schedule/', include('schedule.urls')),
     path('configs/', include('configs.urls')),
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
 ]
