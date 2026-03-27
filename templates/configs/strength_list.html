@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Pontos Fortes - Configurações - NPS System{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'configs:home' %}">Configurações</a></li>
+            <li class="breadcrumb-item active">Pontos Fortes</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-hand-thumbs-up"></i> Pontos Fortes</h2>
+    <a href="{% url 'configs:strength_create' %}" class="btn btn-brand">
+        <i class="bi bi-plus-lg me-1"></i>Novo Ponto Forte
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Descrição</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for strength in strengths %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-semibold text-dark">{{ strength.name }}</span>
+                        </td>
+                        <td>
+                            {% if strength.is_active %}
+                            <span class="badge badge-promoter"><i class="bi bi-check-circle me-1"></i>Ativo</span>
+                            {% else %}
+                            <span class="badge badge-detractor"><i class="bi bi-x-circle me-1"></i>Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'configs:strength_update' strength.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="empty-state">
+                                <i class="bi bi-hand-thumbs-up d-block"></i>
+                                <p>Nenhum ponto forte cadastrado.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

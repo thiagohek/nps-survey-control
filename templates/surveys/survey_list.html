@@ -2,66 +2,101 @@
 
 {% block title %}Pesquisas - NPS System{% endblock %}
 
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item active">Pesquisas</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Page Header -->
+<div class="page-header">
     <h2><i class="bi bi-clipboard-data"></i> Pesquisas</h2>
     {% if user.is_researcher or user.is_director %}
-    <a href="{% url 'surveys:create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Nova Pesquisa
+    <a href="{% url 'surveys:create' %}" class="btn btn-brand">
+        <i class="bi bi-plus-lg me-1"></i>Nova Pesquisa
     </a>
     {% endif %}
 </div>
 
-<div class="table-responsive">
-    <table class="table table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Data</th>
-                <th>Cliente</th>
-                <th>Contrato</th>
-                <th>Filial</th>
-                <th>Respondente</th>
-                <th>NPS</th>
-                <th>Pesquisador</th>
-                <th>Tipo</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for survey in surveys %}
-            <tr>
-                <td>{{ survey.date_conducted|date:"d/m/Y" }}</td>
-                <td><a href="{% url 'clients:detail' survey.contract.client.pk %}">{{ survey.contract.client.name }}</a></td>
-                <td><a href="{% url 'contracts:detail' survey.contract.pk %}">{{ survey.contract.start_date|date:"d/m/Y" }}</a></td>
-                <td>{{ survey.contract.client.branch }}</td>
-                <td>{{ survey.respondent_name }}</td>
-                <td>
-                    <span class="badge bg-{% if survey.nps_score >= 9 %}success{% elif survey.nps_score >= 7 %}warning{% else %}danger{% endif %}">
-                        {{ survey.nps_score }}
-                    </span>
-                </td>
-                <td>{{ survey.created_by.get_full_name|default:survey.created_by.username }}</td>
-                <td>
-                    {% if survey.is_historical %}
-                    <span class="badge bg-secondary">Historica</span>
-                    {% else %}
-                    <span class="badge bg-info text-dark">Nova</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8" class="text-center text-muted">Nenhuma pesquisa encontrada.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Tabela -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Contrato</th>
+                        <th>Regional</th>
+                        <th>Respondente</th>
+                        <th class="text-center">NPS</th>
+                        <th>Pesquisador</th>
+                        <th>Tipo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for survey in surveys %}
+                    <tr>
+                        <td class="fw-medium">{{ survey.date_conducted|date:"d/m/Y" }}</td>
+                        <td>
+                            <a href="{% url 'clients:detail' survey.contract.client.pk %}" class="text-decoration-none fw-medium">
+                                {{ survey.contract.client.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'contracts:detail' survey.contract.pk %}" class="text-decoration-none">
+                                {{ survey.contract.start_date|date:"d/m/Y" }}
+                            </a>
+                        </td>
+                        <td><span class="badge badge-branch">{{ survey.contract.client.branch }}</span></td>
+                        <td>{{ survey.respondent_name }}</td>
+                        <td class="text-center">
+                            <span class="badge-nps {% if survey.nps_score >= 9 %}badge-promoter{% elif survey.nps_score >= 7 %}badge-neutral{% else %}badge-detractor{% endif %}">
+                                {{ survey.nps_score }}
+                            </span>
+                        </td>
+                        <td class="text-muted">{{ survey.created_by.get_full_name|default:survey.created_by.username }}</td>
+                        <td>
+                            {% if survey.is_historical %}
+                            <span class="badge badge-inactive"><i class="bi bi-clock-history me-1"></i>Histórica</span>
+                            {% else %}
+                            <span class="badge badge-active"><i class="bi bi-lightning me-1"></i>Nova</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="bi bi-clipboard-x d-block"></i>
+                                <p>Nenhuma pesquisa encontrada.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
+<!-- Paginação -->
 {% if is_paginated %}
-<nav>
+<nav class="mt-4">
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
         {% endif %}
         {% for num in page_obj.paginator.page_range %}
         <li class="page-item {% if page_obj.number == num %}active{% endif %}">
@@ -69,7 +104,11 @@
         </li>
         {% endfor %}
         {% if page_obj.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
         {% endif %}
     </ul>
 </nav>

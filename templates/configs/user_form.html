@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Usuário - NPS System{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'configs:home' %}">Configurações</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'configs:user_list' %}">Usuários</a></li>
+            <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Usuário</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="page-header">
+            <h2>
+                <i class="bi bi-{% if form.instance.pk %}pencil-square{% else %}person-plus{% endif %}"></i>
+                {% if form.instance.pk %}Editar Usuário{% else %}Novo Usuário{% endif %}
+            </h2>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                {{ form.first_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="{{ form.first_name.html_name }}"
+                                   id="{{ form.first_name.id_for_label }}"
+                                   class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                   value="{{ form.first_name.value|default:'' }}" required>
+                            {% if form.first_name.errors %}
+                            <div class="invalid-feedback">{% for e in form.first_name.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                {{ form.last_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="{{ form.last_name.html_name }}"
+                                   id="{{ form.last_name.id_for_label }}"
+                                   class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                   value="{{ form.last_name.value|default:'' }}" required>
+                            {% if form.last_name.errors %}
+                            <div class="invalid-feedback">{% for e in form.last_name.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">
+                            Email <small class="text-muted">(usado para login)</small> <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" name="{{ form.email.html_name }}"
+                               id="{{ form.email.id_for_label }}"
+                               class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                               value="{{ form.email.value|default:'' }}" required>
+                        {% if form.email.errors %}
+                        <div class="invalid-feedback">{% for e in form.email.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.role.id_for_label }}" class="form-label">
+                            {{ form.role.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.role }}
+                        {% if form.role.errors %}
+                        <div class="invalid-feedback d-block">{% for e in form.role.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="branch-field">
+                        <label class="form-label">Regionais</label>
+                        <div class="border rounded p-3">
+                            {% for choice in form.branch %}
+                            <div class="form-check">
+                                {{ choice.tag }}
+                                <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                            </div>
+                            {% empty %}
+                            <span class="text-muted small">Nenhuma regional cadastrada.</span>
+                            {% endfor %}
+                        </div>
+                        {% if form.branch.errors %}
+                        <div class="invalid-feedback d-block">{% for e in form.branch.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="bi bi-lock me-1" style="color: var(--brand-red)"></i>
+                        {% if form.instance.pk %}Alterar Senha{% else %}Senha{% endif %}
+                    </h6>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                {{ form.password.label }}
+                                {% if not form.instance.pk %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            <input type="password" name="{{ form.password.html_name }}"
+                                   id="{{ form.password.id_for_label }}"
+                                   class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                                   {% if not form.instance.pk %}required{% endif %}>
+                            {% if form.password.help_text %}
+                            <div class="form-text">{{ form.password.help_text }}</div>
+                            {% endif %}
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback">{% for e in form.password.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.password_confirm.id_for_label }}" class="form-label">
+                                {{ form.password_confirm.label }}
+                                {% if not form.instance.pk %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            <input type="password" name="{{ form.password_confirm.html_name }}"
+                                   id="{{ form.password_confirm.id_for_label }}"
+                                   class="form-control {% if form.password_confirm.errors %}is-invalid{% endif %}"
+                                   {% if not form.instance.pk %}required{% endif %}>
+                            {% if form.password_confirm.errors %}
+                            <div class="invalid-feedback">{% for e in form.password_confirm.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-4">
+                        <button type="submit" class="btn btn-brand">
+                            <i class="bi bi-check-lg me-1"></i>Salvar
+                        </button>
+                        <a href="{% url 'configs:user_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const roleSelect = document.getElementById('{{ form.role.id_for_label }}');
+    const branchField = document.getElementById('branch-field');
+
+    function toggleBranch() {
+        branchField.style.display = roleSelect.value === 'MANAGER' ? '' : 'none';
+    }
+
+    roleSelect.addEventListener('change', toggleBranch);
+    toggleBranch();
+});
+</script>
+{% endblock %}

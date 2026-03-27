@@ -2,19 +2,38 @@
 
 {% block title %}Nova Pesquisa - NPS System{% endblock %}
 
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'surveys:list' %}">Pesquisas</a></li>
+            <li class="breadcrumb-item active">Nova Pesquisa</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <h2 class="mb-4"><i class="bi bi-clipboard-plus"></i> Nova Pesquisa</h2>
+    <div class="col-lg-8 col-md-10">
+        <div class="page-header">
+            <h2><i class="bi bi-clipboard-plus"></i> Nova Pesquisa</h2>
+        </div>
+
         <div class="card">
-            <div class="card-body">
+            <div class="card-body p-4">
                 {% if selected_contract %}
-                <div class="alert alert-info">
-                    <strong>Cliente:</strong> {{ selected_contract.client.name }}<br>
-                    <strong>Contrato:</strong> {{ selected_contract.start_date|date:"d/m/Y" }} -
-                    {% if selected_contract.end_date %}{{ selected_contract.end_date|date:"d/m/Y" }}{% else %}Em vigor{% endif %}<br>
-                    <strong>Porte:</strong> {{ selected_contract.get_company_size_display }}
-                    (pesquisa a cada {{ selected_contract.survey_frequency_days }} dias)
+                <div class="d-flex align-items-start gap-3 p-3 mb-4 rounded" style="background: var(--brand-red-subtle);">
+                    <i class="bi bi-file-earmark-text fs-4" style="color: var(--brand-red);"></i>
+                    <div>
+                        <div class="fw-bold">{{ selected_contract.client.name }}</div>
+                        <small class="text-muted">
+                            Contrato: {{ selected_contract.start_date|date:"d/m/Y" }} —
+                            {% if selected_contract.end_date %}{{ selected_contract.end_date|date:"d/m/Y" }}{% else %}Em vigor{% endif %}
+                        </small><br>
+                        <small class="text-muted">Porte: {{ selected_contract.get_company_size_display }} (pesquisa a cada {{ selected_contract.survey_frequency_days }} dias)</small>
+                    </div>
                 </div>
                 {% endif %}
 
@@ -24,62 +43,98 @@
 
                     <!-- Data -->
                     <div class="mb-3">
-                        <label for="id_date_conducted" class="form-label">Data da Pesquisa <span class="text-danger">*</span></label>
+                        <label for="id_date_conducted" class="form-label">
+                            Data da Pesquisa <span class="text-danger">*</span>
+                        </label>
                         {{ form.date_conducted }}
                         {% if form.date_conducted.errors %}
-                        <div class="text-danger small">{% for e in form.date_conducted.errors %}{{ e }}{% endfor %}</div>
+                        <div class="text-danger small mt-1">{% for e in form.date_conducted.errors %}{{ e }}{% endfor %}</div>
                         {% endif %}
                     </div>
 
                     <!-- Respondente -->
-                    <div class="row mb-3">
+                    <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label for="id_respondent_name" class="form-label">Nome do Respondente <span class="text-danger">*</span></label>
+                            <label for="id_respondent_name" class="form-label">
+                                Nome do Respondente <span class="text-danger">*</span>
+                            </label>
                             <input type="text" name="respondent_name" id="id_respondent_name"
                                    class="form-control" value="{{ form.respondent_name.value|default:'' }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="id_respondent_role" class="form-label">Cargo <span class="text-danger">*</span></label>
+                            <label for="id_respondent_role" class="form-label">
+                                Cargo <span class="text-danger">*</span>
+                            </label>
                             <input type="text" name="respondent_role" id="id_respondent_role"
                                    class="form-control" value="{{ form.respondent_role.value|default:'' }}" required>
                         </div>
                     </div>
 
-                    <!-- Notas por servico -->
-                    <div id="serviceScores" class="mb-3">
-                        <h5>Notas por Servico</h5>
+                    <!-- Notas por serviço -->
+                    <div id="serviceScores" class="mb-4">
+                        <label class="form-label">
+                            <i class="bi bi-list-stars me-1" style="color: var(--brand-red);"></i>
+                            Notas por Serviço
+                        </label>
                         {% if contract_services %}
-                        {% for cs in contract_services %}
-                        <div class="row mb-2 align-items-center">
-                            <div class="col-md-6">
-                                <label class="form-label mb-0">{{ cs.service.name }}</label>
+                        <div class="border rounded p-3" style="background: #fafafa;">
+                            {% for cs in contract_services %}
+                            <div class="row g-2 align-items-center {% if not forloop.last %}mb-2 pb-2 border-bottom{% endif %}">
+                                <div class="col-md-6">
+                                    <span class="fw-medium">{{ cs.service.name }}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="number" name="score_{{ cs.service.id }}" min="0" max="10"
+                                           class="form-control" placeholder="0-10" required>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <input type="number" name="score_{{ cs.service.id }}" min="0" max="10"
-                                       class="form-control" placeholder="0-10" required>
-                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                         {% else %}
-                        <p class="text-muted">Nenhum servico vinculado ao contrato.</p>
+                        <p class="text-muted">Nenhum serviço vinculado ao contrato.</p>
                         {% endif %}
                     </div>
 
-                    <!-- NPS Geral -->
-                    <div class="mb-3">
-                        <label for="id_nps_score" class="form-label">
+                    <!-- NPS Geral - Escala Interativa -->
+                    <div class="mb-4">
+                        <label class="form-label">
                             Nota Geral NPS (0-10) <span class="text-danger">*</span>
                         </label>
-                        <p class="form-text mb-1">O cliente indicaria a empresa para outras pessoas?</p>
-                        {{ form.nps_score }}
+                        <p class="form-text mb-2">O cliente indicaria a empresa para outras pessoas?</p>
+
+                        <input type="hidden" name="nps_score" id="id_nps_score_hidden" value="{{ form.nps_score.value|default:'' }}" required>
+
+                        <div class="nps-scale" id="npsScale">
+                            {% for i in "01234567890" %}
+                            {% with idx=forloop.counter0 %}
+                            {% if idx <= 10 %}
+                            <button type="button"
+                                    class="nps-btn {% if idx <= 6 %}detractor{% elif idx <= 8 %}neutral{% else %}promoter{% endif %}"
+                                    data-value="{{ idx }}">
+                                {{ idx }}
+                            </button>
+                            {% endif %}
+                            {% endwith %}
+                            {% endfor %}
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span class="nps-label">Detrator (0-6)</span>
+                            <span class="nps-label">Neutro (7-8)</span>
+                            <span class="nps-label">Promotor (9-10)</span>
+                        </div>
+                        {% if form.nps_score.errors %}
+                        <div class="text-danger small mt-1">{% for e in form.nps_score.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
                     </div>
 
                     <!-- Pontos Fortes -->
                     <div class="mb-3">
-                        <label class="form-label"><i class="bi bi-hand-thumbs-up"></i> Pontos Fortes</label>
-                        <div class="border rounded p-3">
+                        <label class="form-label">
+                            <i class="bi bi-hand-thumbs-up me-1 text-success"></i>Pontos Fortes
+                        </label>
+                        <div class="border rounded p-3" style="background: #fafafa;">
                             {% for checkbox in form.strengths %}
-                            <div class="form-check">
+                            <div class="form-check py-1">
                                 {{ checkbox.tag }}
                                 <label class="form-check-label" for="{{ checkbox.id_for_label }}">
                                     {{ checkbox.choice_label }}
@@ -93,10 +148,12 @@
 
                     <!-- Pontos a Melhorar -->
                     <div class="mb-3">
-                        <label class="form-label"><i class="bi bi-hand-thumbs-down"></i> Pontos a Melhorar</label>
-                        <div class="border rounded p-3">
+                        <label class="form-label">
+                            <i class="bi bi-hand-thumbs-down me-1 text-warning"></i>Pontos a Melhorar
+                        </label>
+                        <div class="border rounded p-3" style="background: #fafafa;">
                             {% for checkbox in form.improvements %}
-                            <div class="form-check">
+                            <div class="form-check py-1">
                                 {{ checkbox.tag }}
                                 <label class="form-check-label" for="{{ checkbox.id_for_label }}">
                                     {{ checkbox.choice_label }}
@@ -108,20 +165,24 @@
                         </div>
                     </div>
 
-                    <!-- Comentarios -->
+                    <!-- Comentários -->
                     <div class="mb-3">
-                        <label for="id_comments" class="form-label">Comentarios</label>
+                        <label for="id_comments" class="form-label">
+                            <i class="bi bi-chat-text me-1" style="color: var(--brand-red);"></i>Comentários
+                        </label>
                         {{ form.comments }}
                     </div>
 
-                    <!-- Pesquisa historica -->
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" name="is_historical" id="id_is_historical" class="form-check-input"
-                               {% if form.is_historical.value %}checked{% endif %}>
-                        <label for="id_is_historical" class="form-check-label">
-                            Pesquisa Historica (realizada antes do sistema)
-                        </label>
-                        <p class="form-text">Se marcado, nao sera agendada a proxima pesquisa automaticamente.</p>
+                    <!-- Pesquisa histórica -->
+                    <div class="mb-4 p-3 border rounded" style="background: #fafafa;">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_historical" id="id_is_historical" class="form-check-input"
+                                   {% if form.is_historical.value %}checked{% endif %}>
+                            <label for="id_is_historical" class="form-check-label fw-medium">
+                                <i class="bi bi-clock-history me-1"></i>Pesquisa Histórica
+                            </label>
+                            <p class="form-text mb-0 mt-1">Se marcado, não será agendada a próxima pesquisa automaticamente.</p>
+                        </div>
                     </div>
 
                     {% if form.non_field_errors %}
@@ -132,8 +193,10 @@
                     </div>
                     {% endif %}
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Salvar Pesquisa</button>
+                    <div class="d-flex gap-2 pt-2">
+                        <button type="submit" class="btn btn-brand">
+                            <i class="bi bi-check-lg me-1"></i>Salvar Pesquisa
+                        </button>
                         {% if selected_contract %}
                         <a href="{% url 'contracts:detail' selected_contract.pk %}" class="btn btn-outline-secondary">Cancelar</a>
                         {% else %}
@@ -145,4 +208,38 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var npsScale = document.getElementById('npsScale');
+    var hiddenInput = document.getElementById('id_nps_score_hidden');
+    var buttons = npsScale.querySelectorAll('.nps-btn');
+
+    // Inicializar com valor existente
+    var currentValue = hiddenInput.value;
+    if (currentValue !== '') {
+        buttons.forEach(function(btn) {
+            if (btn.getAttribute('data-value') === currentValue) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            hiddenInput.value = btn.getAttribute('data-value');
+        });
+    });
+
+    // Remover o select original do Django se existir
+    var originalSelect = document.getElementById('id_nps_score');
+    if (originalSelect && originalSelect !== hiddenInput) {
+        originalSelect.style.display = 'none';
+    }
+});
+</script>
 {% endblock %}

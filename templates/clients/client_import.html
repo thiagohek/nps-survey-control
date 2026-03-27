@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar Clientes - NPS System{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'clients:list' %}">Clientes</a></li>
+            <li class="breadcrumb-item active">Importar</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="page-header">
+            <h2><i class="bi bi-upload"></i> Importar Clientes</h2>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        {% if result %}
+        <!-- Resumo da importação -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3"><i class="bi bi-bar-chart me-2"></i>Resultado da Importação</h5>
+                <div class="row g-3 text-center">
+                    <div class="col-4">
+                        <div class="border rounded p-3">
+                            <div class="fs-3 fw-bold text-success">{{ created }}</div>
+                            <div class="text-muted small">Criados</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-3">
+                            <div class="fs-3 fw-bold text-warning">{{ skipped }}</div>
+                            <div class="text-muted small">Ignorados (CNPJ já existe)</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-3">
+                            <div class="fs-3 fw-bold text-danger">{{ errors|length }}</div>
+                            <div class="text-muted small">Erros</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if errors %}
+                <div class="mt-4">
+                    <h6 class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>Linhas com erro</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 80px">Linha</th>
+                                    <th>Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for err in errors %}
+                                <tr>
+                                    <td class="text-center">{{ err.linha }}</td>
+                                    <td class="text-danger">{{ err.motivo }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Formulário de upload -->
+        <div class="card mb-4">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="file" class="form-label">Arquivo (.csv ou .xlsx) <span class="text-danger">*</span></label>
+                        <input type="file" name="file" id="file" class="form-control" accept=".csv,.xlsx" required>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-brand">
+                            <i class="bi bi-upload me-1"></i>Importar
+                        </button>
+                        <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Instruções -->
+        <div class="card">
+            <div class="card-body p-4">
+                <h5 class="card-title"><i class="bi bi-info-circle me-2"></i>Formato esperado</h5>
+                <p class="text-muted mb-3">A primeira linha do arquivo deve conter os nomes das colunas exatamente como abaixo:</p>
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Coluna</th>
+                                <th>Obrigatório</th>
+                                <th>Valores aceitos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>name</code></td><td><span class="badge badge-detractor">Sim</span></td><td>Texto livre (Razão Social)</td></tr>
+                            <tr><td><code>cnpj</code></td><td><span class="badge badge-detractor">Sim</span></td><td>Texto (ex: 00.000.000/0001-00)</td></tr>
+                            <tr><td><code>size</code></td><td><span class="badge badge-detractor">Sim</span></td><td><code>S</code> = Pequeno, <code>M</code> = Médio, <code>L</code> = Grande</td></tr>
+                            <tr><td><code>branch</code></td><td><span class="badge badge-detractor">Sim</span></td><td>Código da filial (ex: <code>SP01</code>)</td></tr>
+                            <tr><td><code>contact_name</code></td><td><span class="badge badge-neutral">Não</span></td><td>Texto livre</td></tr>
+                            <tr><td><code>contact_phone</code></td><td><span class="badge badge-neutral">Não</span></td><td>Texto (ex: (11) 99999-9999)</td></tr>
+                            <tr><td><code>contact_email</code></td><td><span class="badge badge-neutral">Não</span></td><td>E-mail válido</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    Clientes com CNPJ já cadastrado serão ignorados sem causar erro nas demais linhas.
+                    Para CSV, use codificação UTF-8.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

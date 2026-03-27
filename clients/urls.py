@@ -8,4 +8,5 @@ urlpatterns = [
     path('<int:pk>/', views.ClientDetailView.as_view(), name='detail'),
     path('create/', views.ClientCreateView.as_view(), name='create'),
     path('<int:pk>/edit/', views.ClientUpdateView.as_view(), name='update'),
+    path('import/', views.ClientImportView.as_view(), name='import'),
 ]

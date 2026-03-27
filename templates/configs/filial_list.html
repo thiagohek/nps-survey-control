@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Filiais - Configurações - NPS System{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'configs:home' %}">Configurações</a></li>
+            <li class="breadcrumb-item active">Regionais</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-geo-alt"></i> Regionais</h2>
+    <a href="{% url 'configs:filial_create' %}" class="btn btn-brand">
+        <i class="bi bi-plus-lg me-1"></i>Nova Regional
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Nome</th>
+                        <th>Código</th>
+                        <th>Endereço</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for filial in filiais %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-semibold text-dark">{{ filial.name }}</span>
+                        </td>
+                        <td><span class="badge badge-branch"><i class="bi bi-geo-alt me-1"></i>{{ filial.code }}</span></td>
+                        <td class="text-muted">{{ filial.address|default:"—"|truncatechars:50 }}</td>
+                        <td>
+                            {% if filial.is_active %}
+                            <span class="badge badge-promoter"><i class="bi bi-check-circle me-1"></i>Ativo</span>
+                            {% else %}
+                            <span class="badge badge-detractor"><i class="bi bi-x-circle me-1"></i>Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'configs:filial_update' filial.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="bi bi-geo-alt d-block"></i>
+                                <p>Nenhuma filial cadastrada.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurações - NPS System{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item active">Configurações</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-gear"></i> Configurações</h2>
+</div>
+
+<div class="row g-4">
+
+    {% if user.is_director %}
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="mb-3">
+                    <i class="bi bi-people fs-2" style="color: var(--brand-red)"></i>
+                </div>
+                <h5 class="card-title fw-semibold">Usuários</h5>
+                <p class="card-text text-muted small flex-grow-1">Gerencie os cadastros de pesquisadores, gerentes e diretores do sistema.</p>
+                <a href="{% url 'configs:user_list' %}" class="btn btn-brand mt-2">
+                    <i class="bi bi-arrow-right me-1"></i>Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="mb-3">
+                    <i class="bi bi-briefcase fs-2" style="color: var(--brand-red)"></i>
+                </div>
+                <h5 class="card-title fw-semibold">Serviços</h5>
+                <p class="card-text text-muted small flex-grow-1">Cadastre os serviços oferecidos (ASG, Vigilância, etc.) disponíveis nos contratos.</p>
+                <a href="{% url 'configs:service_list' %}" class="btn btn-brand mt-2">
+                    <i class="bi bi-arrow-right me-1"></i>Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="mb-3">
+                    <i class="bi bi-geo-alt fs-2" style="color: var(--brand-red)"></i>
+                </div>
+                <h5 class="card-title fw-semibold">Regionais</h5>
+                <p class="card-text text-muted small flex-grow-1">Cadastre e gerencie as regionais da empresa e seus códigos de identificação.</p>
+                <a href="{% url 'configs:filial_list' %}" class="btn btn-brand mt-2">
+                    <i class="bi bi-arrow-right me-1"></i>Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="mb-3">
+                    <i class="bi bi-hand-thumbs-up fs-2" style="color: var(--brand-red)"></i>
+                </div>
+                <h5 class="card-title fw-semibold">Pontos Fortes</h5>
+                <p class="card-text text-muted small flex-grow-1">Cadastre os itens de pontos fortes disponíveis nas pesquisas NPS.</p>
+                <a href="{% url 'configs:strength_list' %}" class="btn btn-brand mt-2">
+                    <i class="bi bi-arrow-right me-1"></i>Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="mb-3">
+                    <i class="bi bi-graph-up-arrow fs-2" style="color: var(--brand-red)"></i>
+                </div>
+                <h5 class="card-title fw-semibold">Pontos a Melhorar</h5>
+                <p class="card-text text-muted small flex-grow-1">Cadastre os itens de pontos a melhorar disponíveis nas pesquisas NPS.</p>
+                <a href="{% url 'configs:improvement_list' %}" class="btn btn-brand mt-2">
+                    <i class="bi bi-arrow-right me-1"></i>Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -2,140 +2,178 @@
 
 {% block title %}{{ client.name }} - NPS System{% endblock %}
 
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'clients:list' %}">Clientes</a></li>
+            <li class="breadcrumb-item active">{{ client.name }}</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
 {% block content %}
-<!-- Cabecalho -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ client.name }}</h2>
-    <div>
+<!-- Page Header -->
+<div class="page-header">
+    <h2><i class="bi bi-building"></i> {{ client.name }}</h2>
+    <div class="d-flex gap-2">
         {% if user.is_researcher or user.is_director %}
             {% if not has_active_contract %}
             <a href="{% url 'contracts:create' %}?client={{ client.pk }}" class="btn btn-success">
-                <i class="bi bi-file-earmark-plus"></i> Novo Contrato
+                <i class="bi bi-file-earmark-plus me-1"></i>Novo Contrato
             </a>
             {% endif %}
             <a href="{% url 'clients:update' client.pk %}" class="btn btn-outline-secondary">
-                <i class="bi bi-pencil"></i> Editar
+                <i class="bi bi-pencil me-1"></i>Editar
             </a>
         {% endif %}
     </div>
 </div>
 
-<!-- Secao 1: Info do Cliente + Servicos -->
-<div class="row">
-    <div class="col-md-6">
-        <div class="card mb-3">
-            <div class="card-header"><strong>Dados do Cliente</strong></div>
+<!-- Dados do Cliente + Serviços -->
+<div class="row g-4 mb-4">
+    <!-- Coluna Esquerda: Dados Cadastrais -->
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-person-vcard card-title-icon"></i>Dados Cadastrais
+            </div>
             <div class="card-body">
-                <p><strong>CNPJ:</strong> {{ client.cnpj }}</p>
-                <p><strong>Filial:</strong> {{ client.branch }}</p>
-                <p><strong>Porte:</strong> {{ client.get_size_display }}
-                    (pesquisa a cada {{ client.survey_frequency_days }} dias)</p>
-                <p><strong>Contato:</strong> {{ client.contact_name|default:"-" }}</p>
-                <p><strong>Telefone:</strong> {{ client.contact_phone|default:"-" }}</p>
-                <p><strong>E-mail:</strong> {{ client.contact_email|default:"-" }}</p>
+                <ul class="info-list">
+                    <li>
+                        <span class="info-label">CNPJ</span>
+                        <span class="info-value">{{ client.cnpj }}</span>
+                    </li>
+                    <li>
+                        <span class="info-label">Filial</span>
+                        <span class="info-value"><span class="badge badge-branch">{{ client.branch }}</span></span>
+                    </li>
+                    <li>
+                        <span class="info-label">Porte</span>
+                        <span class="info-value">
+                            <span class="badge {% if client.size == 'S' %}badge-promoter{% elif client.size == 'M' %}badge-neutral{% else %}badge-detractor{% endif %}">
+                                {{ client.get_size_display }}
+                            </span>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="info-label">Frequência de Pesquisa</span>
+                        <span class="info-value">{{ client.survey_frequency_days }} dias</span>
+                    </li>
+                    <li>
+                        <span class="info-label">Contato</span>
+                        <span class="info-value">{{ client.contact_name|default:"-" }}</span>
+                    </li>
+                    <li>
+                        <span class="info-label">Telefone</span>
+                        <span class="info-value">{{ client.contact_phone|default:"-" }}</span>
+                    </li>
+                    <li>
+                        <span class="info-label">E-mail</span>
+                        <span class="info-value">{{ client.contact_email|default:"-" }}</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card mb-3">
-            <div class="card-header"><strong>Servicos Atuais (Contrato Ativo)</strong></div>
+    <!-- Coluna Direita: Serviços do Contrato Ativo -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-check2-square card-title-icon"></i>Serviços Atuais (Contrato Ativo)</span>
+            </div>
             <div class="card-body">
                 {% for cs in contract_services %}
-                <div class="d-flex align-items-center border-bottom py-2">
-                    <i class="bi bi-check-circle-fill text-success me-2"></i>
-                    {{ cs.service.name }}
+                <div class="d-flex align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                    <i class="bi bi-check-circle-fill text-success me-3"></i>
+                    <span class="fw-medium">{{ cs.service.name }}</span>
                 </div>
                 {% empty %}
-                <p class="text-muted">
+                <div class="empty-state py-4">
+                    <i class="bi bi-clipboard-x d-block"></i>
                     {% if has_active_contract %}
-                    Nenhum servico vinculado ao contrato ativo.
+                    <p>Nenhum serviço vinculado ao contrato ativo.</p>
                     {% else %}
-                    Nenhum contrato ativo. Crie um contrato para vincular servicos.
+                    <p>Nenhum contrato ativo.<br>
+                    {% if user.is_researcher or user.is_director %}
+                    <a href="{% url 'contracts:create' %}?client={{ client.pk }}" class="btn btn-sm btn-brand mt-2">
+                        <i class="bi bi-plus-lg me-1"></i>Criar Contrato
+                    </a>
                     {% endif %}
-                </p>
+                    </p>
+                    {% endif %}
+                </div>
                 {% endfor %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Secao 2: Contratos -->
+<!-- Histórico de Contratos -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <strong><i class="bi bi-file-earmark-text"></i> Contratos</strong>
+        <span><i class="bi bi-file-earmark-text card-title-icon"></i>Histórico de Contratos</span>
         {% if user.is_researcher or user.is_director %}
             {% if not has_active_contract %}
             <a href="{% url 'contracts:create' %}?client={{ client.pk }}" class="btn btn-sm btn-success">
-                <i class="bi bi-plus-lg"></i> Novo Contrato
+                <i class="bi bi-plus-lg me-1"></i>Novo Contrato
             </a>
             {% endif %}
         {% endif %}
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-modern table-hover mb-0"> <thead>
                     <tr>
-                        <th>Periodo</th>
+                        <th>Período</th>
                         <th>Status</th>
                         <th>Porte</th>
-                        <th>Frequencia</th>
+                        <th>Frequência</th>
                         <th>Pesquisas</th>
-                        <th>NPS Medio</th>
-                        <th>Acoes</th>
+                        <th>NPS Médio</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in contracts_data %}
-                    <tr>
+                    <tr class="clickable-row" data-href="{% url 'contracts:detail' item.contract.pk %}" style="cursor: pointer;">
                         <td>
                             {{ item.contract.start_date|date:"d/m/Y" }}
                             {% if item.contract.end_date %}
-                            - {{ item.contract.end_date|date:"d/m/Y" }}
+                            — {{ item.contract.end_date|date:"d/m/Y" }}
                             {% else %}
-                            - <span class="text-muted">Em vigor</span>
+                            — <span class="text-muted fst-italic">Em vigor</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if item.contract.is_active %}
-                            <span class="badge bg-success">Ativo</span>
+                            <span class="badge badge-active"><i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>Ativo</span>
                             {% else %}
-                            <span class="badge bg-secondary">Encerrado</span>
+                            <span class="badge badge-inactive">Encerrado</span>
                             {% endif %}
                         </td>
                         <td>{{ item.contract.get_company_size_display }}</td>
                         <td>{{ item.contract.survey_frequency_days }} dias</td>
-                        <td>{{ item.survey_count }}</td>
+                        <td><span class="fw-semibold">{{ item.survey_count }}</span></td>
                         <td>
                             {% if item.avg_nps %}
-                            <span class="badge bg-{% if item.avg_nps >= 9 %}success{% elif item.avg_nps >= 7 %}warning{% else %}danger{% endif %}">
+                            <span class="badge-nps {% if item.avg_nps >= 9 %}badge-promoter{% elif item.avg_nps >= 7 %}badge-neutral{% else %}badge-detractor{% endif %}">
                                 {{ item.avg_nps }}
                             </span>
                             {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'contracts:detail' item.contract.pk %}" class="btn btn-sm btn-outline-primary" title="Ver Contrato">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            {% if user.is_researcher or user.is_director %}
-                                {% if item.contract.is_active %}
-                                <a href="{% url 'surveys:create' %}?contract={{ item.contract.pk }}" class="btn btn-sm btn-outline-success" title="Nova Pesquisa">
-                                    <i class="bi bi-clipboard-plus"></i>
-                                </a>
-                                {% endif %}
+                            <span class="text-muted">—</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-3">
-                            Nenhum contrato encontrado.
-                            {% if user.is_researcher or user.is_director %}
-                            <a href="{% url 'contracts:create' %}?client={{ client.pk }}">Criar primeiro contrato</a>.
-                            {% endif %}
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-file-earmark-x d-block"></i>
+                                <p>Nenhum contrato encontrado.</p>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -144,4 +182,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const rows = document.querySelectorAll(".clickable-row");
+    rows.forEach(row => {
+        row.addEventListener("click", function() {
+            window.location.href = this.dataset.href;
+        });
+    });
+});
+</script>
 {% endblock %}

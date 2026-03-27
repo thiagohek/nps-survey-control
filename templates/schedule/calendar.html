@@ -2,69 +2,99 @@
 
 {% block title %}Agenda - NPS System{% endblock %}
 
-{% block extra_css %}
-<style>
-    #calendar { max-width: 1100px; margin: 0 auto; }
-    .fc-event { cursor: pointer; }
-</style>
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item active">Agenda</li>
+        </ol>
+    </nav>
+</div>
 {% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="bi bi-calendar3"></i> Agenda de Pesquisas</h2>
+<!-- Page Header -->
+<div class="page-header">
+    <h2><i class="bi bi-calendar3"></i> Agenda de Pesquisas</h2>
+</div>
 
-<div class="card">
+<!-- Calendário -->
+<div class="card mb-4">
     <div class="card-body">
-        <div class="mb-3">
-            <span class="badge bg-success">Pendente</span>
-            <span class="badge bg-primary">Concluida</span>
-            <span class="badge bg-danger">Atrasada</span>
+        <div class="calendar-legend mb-3">
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #198754;"></span>
+                Pendente
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #0d6efd;"></span>
+                Concluída
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #dc3545;"></span>
+                Atrasada
+            </div>
         </div>
         <div id="calendar"></div>
     </div>
 </div>
 
-<!-- Proximas Pesquisas -->
-<div class="card mt-4">
-    <div class="card-header"><strong><i class="bi bi-list-check"></i> Proximas Pesquisas Agendadas</strong></div>
+<!-- Próximas Pesquisas -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list-check card-title-icon"></i>Próximas Pesquisas Agendadas
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-modern mb-0">
+                <thead>
                     <tr>
                         <th>Cliente</th>
                         <th>Contrato</th>
-                        <th>Filial</th>
+                        <th>Regional</th>
                         <th>Data Agendada</th>
                         <th>Status</th>
-                        <th>Acoes</th>
+                        <th class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in upcoming %}
                     <tr>
-                        <td>{{ item.contract.client.name }}</td>
-                        <td><a href="{% url 'contracts:detail' item.contract.pk %}">{{ item.contract.start_date|date:"d/m/Y" }}</a></td>
-                        <td>{{ item.contract.client.branch }}</td>
-                        <td>{{ item.scheduled_date|date:"d/m/Y" }}</td>
+                        <td class="fw-medium">{{ item.contract.client.name }}</td>
+                        <td>
+                            <a href="{% url 'contracts:detail' item.contract.pk %}" class="text-decoration-none">
+                                {{ item.contract.start_date|date:"d/m/Y" }}
+                            </a>
+                        </td>
+                        <td><span class="badge badge-branch">{{ item.contract.client.branch }}</span></td>
+                        <td class="fw-medium">{{ item.scheduled_date|date:"d/m/Y" }}</td>
                         <td>
                             {% if item.is_overdue %}
-                            <span class="badge bg-danger">Atrasada</span>
+                            <span class="badge badge-detractor"><i class="bi bi-exclamation-circle me-1"></i>Atrasada</span>
                             {% else %}
-                            <span class="badge bg-success">Pendente</span>
+                            <span class="badge badge-active"><i class="bi bi-clock me-1"></i>Pendente</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="{% url 'surveys:create' %}?contract={{ item.contract.pk }}" class="btn btn-sm btn-outline-success" title="Realizar Pesquisa">
-                                <i class="bi bi-clipboard-plus"></i>
-                            </a>
-                            <a href="{% url 'contracts:detail' item.contract.pk %}" class="btn btn-sm btn-outline-primary" title="Ver Contrato">
-                                <i class="bi bi-graph-up"></i>
-                            </a>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'surveys:create' %}?contract={{ item.contract.pk }}" class="btn btn-outline-success" title="Realizar Pesquisa">
+                                    <i class="bi bi-clipboard-plus"></i>
+                                </a>
+                                <a href="{% url 'contracts:detail' item.contract.pk %}" class="btn btn-outline-primary" title="Ver Contrato">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-3">Nenhuma pesquisa agendada.</td>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-calendar-x d-block"></i>
+                                <p>Nenhuma pesquisa agendada.</p>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -78,20 +108,34 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="eventTitle"></h5>
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar-event me-2" style="color: var(--brand-red);"></i>
+                    <span id="eventTitle"></span>
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p><strong>Data:</strong> <span id="eventDate"></span></p>
-                <p><strong>Filial:</strong> <span id="eventBranch"></span></p>
-                <p><strong>Status:</strong> <span id="eventStatus"></span></p>
+                <ul class="info-list">
+                    <li>
+                        <span class="info-label">Data</span>
+                        <span class="info-value" id="eventDate"></span>
+                    </li>
+                    <li>
+                        <span class="info-label">Regional</span>
+                        <span class="info-value" id="eventBranch"></span>
+                    </li>
+                    <li>
+                        <span class="info-label">Status</span>
+                        <span class="info-value" id="eventStatus"></span>
+                    </li>
+                </ul>
             </div>
             <div class="modal-footer">
                 <a id="eventSurveyLink" href="#" class="btn btn-success">
-                    <i class="bi bi-clipboard-plus"></i> Realizar Pesquisa
+                    <i class="bi bi-clipboard-plus me-1"></i>Realizar Pesquisa
                 </a>
-                <a id="eventContractLink" href="#" class="btn btn-primary">
-                    <i class="bi bi-file-earmark-text"></i> Ver Contrato
+                <a id="eventContractLink" href="#" class="btn btn-outline-primary">
+                    <i class="bi bi-file-earmark-text me-1"></i>Ver Contrato
                 </a>
             </div>
         </div>
@@ -109,6 +153,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const calendarOptions = {
         locale: 'pt-br',
         initialView: 'dayGridMonth',
+        height: 'auto',
+
+        buttonText: {
+        today:    'Hoje',
+        month:    'Mês',
+        week:     'Semana',
+        day:      'Dia',
+        list:     'Lista'
+        },
+
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -123,8 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('eventDate').textContent = new Date(info.event.startStr).toLocaleDateString('pt-BR');
             document.getElementById('eventBranch').textContent = props.branch;
             document.getElementById('eventStatus').textContent = props.status;
-            document.getElementById('eventSurveyLink').href = `/surveys/create/?contract=${contractId}`;
-            document.getElementById('eventContractLink').href = `/contracts/${contractId}/`;
+            document.getElementById('eventSurveyLink').href = '/surveys/create/?contract=' + contractId;
+            document.getElementById('eventContractLink').href = '/contracts/' + contractId + '/';
 
             new bootstrap.Modal(document.getElementById('eventModal')).show();
         },

@@ -7,7 +7,7 @@ class Client(models.Model):
         MEDIUM = 'M', 'Médio'
         LARGE = 'L', 'Grande'
 
-    FREQUENCY_MAP = {'S': 30, 'M': 60, 'L': 90}
+    FREQUENCY_MAP = {'S': 90, 'M': 60, 'L': 30}
 
     name = models.CharField('Razão Social', max_length=300)
     cnpj = models.CharField('CNPJ', max_length=18, unique=True)

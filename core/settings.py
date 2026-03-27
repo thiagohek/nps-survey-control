@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'contracts',
     'surveys',
     'schedule',
+    'configs',
 ]
 
 MIDDLEWARE = [

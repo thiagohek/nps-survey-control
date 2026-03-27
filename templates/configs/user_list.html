@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuários - Configurações - NPS System{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb-wrapper">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="bi bi-house"></i> Início</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'configs:home' %}">Configurações</a></li>
+            <li class="breadcrumb-item active">Usuários</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-people"></i> Usuários</h2>
+    <a href="{% url 'configs:user_create' %}" class="btn btn-brand">
+        <i class="bi bi-plus-lg me-1"></i>Novo Usuário
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label small text-muted mb-1">Buscar</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="q" class="form-control border-start-0"
+                       placeholder="Nome ou usuário..."
+                       value="{{ request.GET.q|default:'' }}">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted mb-1">Perfil</label>
+            <select name="role" class="form-select">
+                <option value="">Todos os perfis</option>
+                {% for value, label in role_choices %}
+                <option value="{{ value }}" {% if request.GET.role == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-brand flex-grow-1">
+                <i class="bi bi-funnel me-1"></i>Filtrar
+            </button>
+            {% if request.GET.q or request.GET.role %}
+            <a href="{% url 'configs:user_list' %}" class="btn btn-outline-secondary" title="Limpar filtros">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Tabela -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Nome</th>
+                        <th>Usuário</th>
+                        <th>Perfil</th>
+                        <th>Regionais</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-semibold text-dark">{{ u.get_full_name|default:u.username }}</span>
+                            {% if u == user %}<span class="badge bg-secondary ms-1">Você</span>{% endif %}
+                        </td>
+                        <td class="text-muted">{{ u.username }}</td>
+                        <td>
+                            <span class="badge {% if u.role == 'DIRECTOR' %}badge-detractor{% elif u.role == 'MANAGER' %}badge-neutral{% else %}badge-promoter{% endif %}">
+                                {{ u.get_role_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% for branch in u.branch.all %}
+                            <span class="badge badge-branch me-1"><i class="bi bi-geo-alt me-1"></i>{{ branch.code }}</span>
+                            {% empty %}
+                            <span class="text-muted small">Todas</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if u.is_active %}
+                            <span class="badge badge-promoter"><i class="bi bi-check-circle me-1"></i>Ativo</span>
+                            {% else %}
+                            <span class="badge badge-detractor"><i class="bi bi-x-circle me-1"></i>Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'configs:user_update' u.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" action="{% url 'configs:user_deactivate' u.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                        title="{% if u.is_active %}Desativar{% else %}Ativar{% endif %}"
+                                        {% if u == user %}disabled{% endif %}>
+                                    <i class="bi bi-{% if u.is_active %}person-slash{% else %}person-check{% endif %}"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-people d-block"></i>
+                                <p>Nenhum usuário encontrado.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
