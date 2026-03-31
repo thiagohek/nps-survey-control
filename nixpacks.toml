@@ -1,5 +1,2 @@
-[phases.build]
-cmds = ["python manage.py collectstatic --noinput"]
-
 [start]
-cmd = "python manage.py migrate && gunicorn core.wsgi"
+cmd = "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn core.wsgi"
