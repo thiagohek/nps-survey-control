@@ -2,4 +2,4 @@
 cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-cmd = "gunicorn core.wsgi"
+cmd = "python manage.py migrate && gunicorn core.wsgi"
