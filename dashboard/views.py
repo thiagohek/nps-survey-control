@@ -179,8 +179,10 @@ class CEODashboardView(LoginRequiredMixin, View):
         )
 
         # --- Ranking de empresas (critério: média raw score 0-10) ---
+        # Apenas contratos ativos para não exibir empresas encerradas no Top 5
+        surveys_active = surveys.filter(contract__status=Contract.Status.ACTIVE)
         client_qs = (
-            surveys
+            surveys_active
             .values('contract__client__id', 'contract__client__name', 'contract__client__branch__name')
             .annotate(
                 total=Count('id'),
